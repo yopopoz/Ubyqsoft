@@ -66,7 +66,7 @@ interface AddEventModalProps {
 
 export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalProps) {
     const { token } = useAuth();
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     const [isOpen, setIsOpen] = useState(false);
     const [type, setType] = useState<EventTypeValue>(EventType.ORDER_INFO);

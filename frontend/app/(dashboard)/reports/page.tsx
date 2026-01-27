@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function ReportsPage() {
     const { token } = useAuth();
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     const handleDownload = async () => {
         try {

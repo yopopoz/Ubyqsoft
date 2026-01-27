@@ -55,7 +55,7 @@ export default function ShipmentsTable() {
         loadShipments();
 
         // WebSocket Login
-        const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
         const wsUrl = API_BASE.replace("http", "ws") + "/ws/shipments";
 
         try {

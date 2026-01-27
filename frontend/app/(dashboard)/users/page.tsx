@@ -15,7 +15,7 @@ interface User {
 export default function UsersPage() {
     const { token, isAdmin } = useAuth();
     const router = useRouter();
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);

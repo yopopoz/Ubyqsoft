@@ -11,7 +11,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
