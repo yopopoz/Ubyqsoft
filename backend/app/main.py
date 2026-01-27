@@ -73,8 +73,13 @@ def startup_event():
             print("Admin user created: admin@example.com / ChangeMe123!")
         
         # Seed demo data
-        from .seed import seed_database
-        seed_database(db)
+        try:
+            from .seed import seed_database
+            seed_database(db)
+        except Exception as e:
+            print(f"WARNING: Failed to seed database: {e}")
+            import traceback
+            traceback.print_exc()
         
     finally:
         db.close()
