@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import CloudSettings from "@/components/settings/CloudSettings";
 import WebhookSettings from "@/components/settings/WebhookSettings";
 import AISettings from "@/components/settings/AISettings";
@@ -20,7 +20,11 @@ export default function AdminSettingsPage() {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'cloud': return <CloudSettings />;
+            case 'cloud': return (
+                <Suspense fallback={<div className="p-8 text-center text-slate-500">Chargement des paramètres cloud...</div>}>
+                    <CloudSettings />
+                </Suspense>
+            );
             case 'ai': return <AISettings />;
             case 'webhooks': return <WebhookSettings />;
             case 'email': return <EmailSettings />;
@@ -45,8 +49,8 @@ export default function AdminSettingsPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === tab.id
-                                        ? 'bg-brand-primary/10 text-brand-primary shadow-sm'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    ? 'bg-brand-primary/10 text-brand-primary shadow-sm'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                     }`}
                             >
                                 <span className="text-lg">{tab.icon}</span>

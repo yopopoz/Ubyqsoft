@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { navigation } from "@/config/navigation";
 
-export default function Sidebar() {
+interface SidebarProps {
+    onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
     const pathname = usePathname();
     const { canWrite, isAdmin, user, logout } = useAuth();
 
