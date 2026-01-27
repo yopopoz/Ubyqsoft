@@ -118,3 +118,18 @@ L'application devrait être accessible sur `http://votre_ip_serveur`.
 ## Notes
 - Si vous utilisez un domaine, pointez les enregistrements DNS A vers l'IP du VPS.
 - Pour le HTTPS, la méthode la plus simple est d'utiliser un reverse proxy comme Traefik ou de configurer Certbot/Let's Encrypt sur le serveur hôte ou dans le conteneur Nginx.
+
+## 6. Initialisation de la Base de Données (Premier lancement)
+Lors de la première installation, la base de données est vide. Vous devez exécuter une commande pour créer l'utilisateur administrateur par défaut.
+
+Sur le serveur, dans le dossier `/opt/bbox-l` :
+
+```bash
+# Initialiser les données (crée admin@example.com / admin)
+docker compose -f docker-compose.prod.yml exec backend python -m app.seed_data
+```
+
+**Identifiants par défaut :**
+- Email : `admin@example.com`
+- Mot de passe : `admin`
+
