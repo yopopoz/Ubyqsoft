@@ -51,7 +51,7 @@ def startup_event():
     start_scheduler()
     db = SessionLocal()
     try:
-        # Create initial admin
+        # Create or update initial admin
         user = db.query(User).filter(User.email == "admin@example.com").first()
         if not user:
             print("Creating initial admin user...")
@@ -64,6 +64,12 @@ def startup_event():
             db.add(admin)
             db.commit()
             print("Admin user created: admin@example.com / ChangeMe123!")
+        else:
+            # Force password reset to ensure access
+            print("Ensuring admin password is valid...")
+            user.password_hash = get_password_hash("ChangeMe123!")
+            db.commit()
+            print("Admin user verified/updated: admin@example.com / ChangeMe123!")
         
         # Seed demo data
         try:

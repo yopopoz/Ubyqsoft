@@ -92,8 +92,8 @@ def seed_database(db: Session):
                     shipment_id=shipment.id,
                     type=EVENT_TYPES[j],
                     timestamp=event_time,
-                    note=f"Auto-generated event for {ref}",
-                    critical=(j in [2, 8])
+                    note=f"Auto-generated event for {ref}"
+                    # critical field removed as it does not exist in the model
                 )
                 db.add(event)
         
