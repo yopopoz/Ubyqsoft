@@ -17,7 +17,7 @@
   --color-status-info: var(--status-info);
 
   /* Font Family */
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: var(--font-gruppo), system-ui, sans-serif;
 }
 
 /* ========================================
@@ -43,6 +43,8 @@
   /* Red 500 */
   --status-info: #3B82F6;
   /* Blue 500 */
+  --status-info: #3B82F6;
+  /* Blue 500 */
 
   /* Surfaces (Modern Grays) */
   --surface-1: #F8FAFC;
@@ -51,18 +53,39 @@
   /* Slate 100 */
   --surface-3: #E2E8F0;
   /* Slate 200 */
-
-  /* Font Families */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* Base Styles */
 /* Base Styles */
 body {
   background-color: var(--surface-1);
   color: var(--brand-primary);
-  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1.2;
+}
+
+h2 {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1.3;
+}
+
+h3 {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.4;
 }
 
 /* Glassmorphism Utilities */
@@ -190,17 +213,18 @@ body {
 /* Sidebar Navigation */
 .sidebar-nav-item-active {
   @apply flex items-center gap-4 px-4 py-3 mx-3 rounded-lg transition-all duration-300;
-  background-color: rgba(211, 0, 38, 0.05);
-  /* Red-50 equivalent */
-  color: var(--brand-primary);
-  border-left: 3px solid var(--brand-secondary);
+  background-color: rgba(0, 0, 0, 0.05);
+  /* Light Gray */
+  color: black;
+  border-left: 3px solid #475569;
+  /* Slate-600 (Nuance de gris) */
 }
 
 .sidebar-nav-item-inactive {
-  @apply flex items-center gap-4 px-4 py-3 mx-3 rounded-lg transition-all duration-300 text-slate-500 border-l-3 border-transparent;
+  @apply flex items-center gap-4 px-4 py-3 mx-3 rounded-lg transition-all duration-300 text-black border-l-3 border-transparent;
 }
 
 .sidebar-nav-item-inactive:hover {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-slate-100 text-black;
   transform: translateX(4px);
 }

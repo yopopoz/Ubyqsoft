@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Gruppo } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const gruppo = Gruppo({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-gruppo",
+});
 
 export const metadata: Metadata = {
   title: "PURE TRADE | Logistique",
@@ -16,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body className={inter.className} suppressHydrationWarning>
+    <html lang="fr" className={gruppo.variable}>
+      <body className={`${gruppo.className} antialiased`} suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

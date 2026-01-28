@@ -118,8 +118,7 @@ export default function ShipmentsTable() {
     return (
         <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-brand-primary">Tableau de Bord</h2>
+            <div className="flex justify-end items-center mb-4">
                 <div className="relative">
                     <button
                         onClick={() => setShowColumnSelector(!showColumnSelector)}

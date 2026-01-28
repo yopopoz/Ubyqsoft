@@ -157,7 +157,7 @@ export default function DashboardPage() {
                     </Link>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="-mx-4 sm:mx-0">
                     <ShipmentsTable />
                 </div>
             </div>
