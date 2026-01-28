@@ -150,111 +150,116 @@ export default function ShipmentsTable() {
             </div>
 
             {/* Desktop Smart Table */}
-            <div className="hidden lg:block overflow-hidden rounded-xl border border-surface-3 shadow-sm bg-white/80 backdrop-blur-sm">
-                <table className="min-w-full">
+            <div className="hidden lg:block overflow-x-auto rounded-xl border border-surface-3 shadow-sm bg-white/80 backdrop-blur-sm scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                <table className="min-w-full w-max">
                     <thead className="bg-surface-1 border-b border-surface-2">
                         <tr>
-                            {visibleColumns.reference && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Référence</th>}
-                            {visibleColumns.status && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Statut</th>}
-                            {visibleColumns.route && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Trajet</th>}
-                            {visibleColumns.dates && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ETD / ETA</th>}
-                            {visibleColumns.mad_its && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">MAD / ITS</th>}
-                            {visibleColumns.vessel && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Navire</th>}
-                            {visibleColumns.forwarder_ref && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ref Transitaddy</th>}
-                            {visibleColumns.incoterm && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Incoterm</th>}
-                            {visibleColumns.sku && <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">SKU</th>}
-                            {visibleColumns.quantity && <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Qté</th>}
-                            <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                            {visibleColumns.reference && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Référence</th>}
+                            {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Statut</th>}
+                            {visibleColumns.route && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Trajet</th>}
+                            {visibleColumns.dates && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">ETD / ETA</th>}
+                            {visibleColumns.mad_its && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">MAD / ITS</th>}
+                            {visibleColumns.vessel && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Navire</th>}
+                            {visibleColumns.forwarder_ref && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Ref Transitaddy</th>}
+                            {visibleColumns.incoterm && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Incoterm</th>}
+                            {visibleColumns.sku && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">SKU</th>}
+                            {visibleColumns.quantity && <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qté</th>}
+                            <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-surface-1 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-2">
                         {shipments.map((shipment) => (
                             <tr key={shipment.id} className="hover:bg-surface-1/50 transition-colors group">
                                 {visibleColumns.reference && (
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-3 whitespace-nowrap">
                                         <div className="flex flex-col">
-                                            <span className="font-semibold text-brand-primary group-hover:text-brand-secondary transition-colors">
+                                            <span className="font-semibold text-brand-primary text-sm group-hover:text-brand-secondary transition-colors">
                                                 {shipment.reference}
                                             </span>
-                                            <span className="text-xs text-slate-400">{shipment.customer || "N/A"}</span>
+                                            <span className="text-[10px] text-slate-400 uppercase tracking-wide max-w-[120px] truncate">{shipment.customer || "N/A"}</span>
                                         </div>
                                     </td>
                                 )}
                                 {visibleColumns.status && (
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <StatusBadge status={shipment.status} />
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="scale-90 origin-left">
+                                            <StatusBadge status={shipment.status} />
+                                        </div>
                                     </td>
                                 )}
                                 {visibleColumns.route && (
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center text-sm text-slate-600">
-                                            <span className="font-medium">{shipment.origin?.split(',')[0] || "-"}</span>
-                                            <svg className="w-4 h-4 mx-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                            <span className="font-medium">{shipment.destination?.split(',')[0] || "-"}</span>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="flex items-center text-xs text-slate-600">
+                                            <span className="font-medium max-w-[80px] truncate" title={shipment.origin || ""}>{shipment.origin?.split(',')[0] || "-"}</span>
+                                            <svg className="w-3 h-3 mx-1.5 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                                            <span className="font-medium max-w-[80px] truncate" title={shipment.destination || ""}>{shipment.destination?.split(',')[0] || "-"}</span>
                                         </div>
                                     </td>
                                 )}
                                 {visibleColumns.dates && (
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex flex-col text-xs">
-                                            <div className="flex justify-between w-32 mb-1">
-                                                <span className="text-slate-400">ETD:</span>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="flex flex-col text-xs gap-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-400 w-6 text-[10px] uppercase">Dep</span>
                                                 <span className="text-slate-700 font-medium">{getTimeAgo(shipment.planned_etd)}</span>
                                             </div>
-                                            <div className="flex justify-between w-32">
-                                                <span className="text-slate-400">ETA:</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-400 w-6 text-[10px] uppercase">Arr</span>
                                                 <span className="text-slate-700 font-medium">{getTimeAgo(shipment.planned_eta)}</span>
                                             </div>
                                         </div>
                                     </td>
                                 )}
                                 {visibleColumns.mad_its && (
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex flex-col text-xs">
-                                            <div className="flex justify-between w-32 mb-1">
-                                                <span className="text-slate-400">MAD:</span>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="flex flex-col text-xs gap-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-400 w-6 text-[10px] uppercase">MAD</span>
                                                 <span className="text-slate-700 font-medium">{shipment.mad_date ? new Date(shipment.mad_date).toLocaleDateString() : "-"}</span>
                                             </div>
-                                            <div className="flex justify-between w-32">
-                                                <span className="text-slate-400">ITS:</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-400 w-6 text-[10px] uppercase">ITS</span>
                                                 <span className="text-slate-700 font-medium">{shipment.its_date ? new Date(shipment.its_date).toLocaleDateString() : "-"}</span>
                                             </div>
                                         </div>
                                     </td>
                                 )}
                                 {visibleColumns.vessel && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-slate-700 truncate max-w-[150px]" title={shipment.vessel || ""}>{shipment.vessel || "-"}</span>
-                                            <span className="text-xs text-slate-400">{shipment.bl_number ? `BL: ${shipment.bl_number}` : ""}</span>
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600">
+                                        <div className="flex flex-col max-w-[140px]">
+                                            <span className="font-medium text-slate-700 truncate" title={shipment.vessel || ""}>{shipment.vessel || "-"}</span>
+                                            {shipment.bl_number && <span className="text-[10px] text-slate-400 truncate">BL: {shipment.bl_number}</span>}
                                         </div>
                                     </td>
                                 )}
                                 {visibleColumns.forwarder_ref && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600">
                                         {shipment.forwarder_ref ? (
-                                            <span className="bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-500 font-mono border border-slate-200">{shipment.forwarder_ref}</span>
+                                            <span className="bg-slate-50 px-1.5 py-0.5 rounded text-[10px] text-slate-500 font-mono border border-slate-100">{shipment.forwarder_ref}</span>
                                         ) : "-"}
                                     </td>
                                 )}
                                 {visibleColumns.incoterm && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                        <span className="bg-surface-2 px-2 py-1 rounded border border-surface-3">{shipment.incoterm}</span>
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600">
+                                        <span className="bg-surface-2 px-1.5 py-0.5 rounded border border-surface-3 text-[10px] font-medium">{shipment.incoterm}</span>
                                     </td>
                                 )}
                                 {visibleColumns.sku && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-500 max-w-[100px] truncate" title={shipment.sku || ""}>
                                         {shipment.sku || "-"}
                                     </td>
                                 )}
                                 {visibleColumns.quantity && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 text-right font-mono">
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600 text-right font-mono">
                                         {shipment.quantity?.toLocaleString() || "-"}
                                     </td>
                                 )}
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <Link href={`/shipment/${shipment.id}`} className="text-brand-secondary hover:text-brand-primary transition-colors font-semibold">
-                                        Détails &rarr;
+                                <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-medium sticky right-0 bg-white group-hover:bg-slate-50/50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] transition-colors">
+                                    <Link href={`/shipment/${shipment.id}`} className="p-1.5 rounded-lg text-slate-400 hover:text-brand-secondary hover:bg-brand-secondary/5 transition-all inline-flex items-center justify-center">
+                                        <span className="sr-only">Voir</span>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                                        </svg>
                                     </Link>
                                 </td>
                             </tr>
