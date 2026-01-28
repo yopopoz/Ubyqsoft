@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
     const router = useRouter();
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -28,13 +30,13 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (res.ok && data.access_token) {
-                localStorage.setItem("token", data.access_token);
-                router.push("/");
-                router.refresh();
+                login(data.access_token);
+                // AuthContext handles router.push("/")
             } else {
                 setError(data.detail || "Identifiants invalides");
             }
-        } catch {
+        } catch (e) {
+            console.error("Login successful but error during state update:", e);
             setError("Erreur de connexion. Veuillez réessayer.");
         } finally {
             setLoading(false);

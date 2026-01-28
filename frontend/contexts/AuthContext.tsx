@@ -35,12 +35,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Helper to decode JWT safely
+  const decodeToken = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("Failed to decode token", e);
+      return null;
+    }
+  };
+
   const login = (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
-    const payload = JSON.parse(atob(newToken.split(".")[1]));
-    setUser(payload);
-    router.push("/");
+    const payload = decodeToken(newToken);
+    if (payload) {
+      setUser(payload);
+      router.push("/");
+    } else {
+      // If decoding fails, maybe just push anyway? Or clear?
+      // Let's assume valid token for now but handle error gracefully
+      console.error("Login failed: invalid token format");
+    }
   };
 
   const logout = () => {
@@ -55,12 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
       setToken(storedToken);
-      // Decode token for user info (simple version)
-      try {
-        const payload = JSON.parse(atob(storedToken.split(".")[1]));
+      const payload = decodeToken(storedToken);
+      if (payload) {
         setUser(payload);
-      } catch (e) {
-        console.error("Invalid token", e);
+      } else {
         localStorage.removeItem("token");
         setToken(null);
       }
