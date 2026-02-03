@@ -25,7 +25,10 @@ Severity: LOW, MEDIUM, HIGH, CRITICAL
 id, shipment_id, type, filename, url, status, uploaded_at
 Types: BL, INVOICE, PACKING_LIST, QC_REPORT, CUSTOMS_DEC
 
-Synonymes: lot→batch_number, commande/PO→reference, aléa/risque→alerts, jalon/étape→events, qualité/QC→qc_date ou documents, retard→planned_eta<CURRENT_DATE
+=== CARRIER_SCHEDULES (horaires transporteurs) ===
+id, carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name, voyage_ref
+
+Synonymes: lot→batch_number, commande/PO→reference, aléa/risque→alerts, jalon/étape→events, qualité/QC→qc_date ou documents, retard→planned_eta<CURRENT_DATE, schedule/horaire→carrier_schedules
 
 === TEMPLATES ===
 Q: où est ma commande X/position X
@@ -83,6 +86,44 @@ SQL: SELECT type,message,impact_days FROM alerts WHERE severity='CRITICAL'AND ac
 Q: statistiques aléas
 SQL: SELECT type,COUNT(*)as nb,AVG(impact_days)as impact_moyen FROM alerts WHERE active=true GROUP BY type;
 
+=== COMMERCIAL/VENTES ===
+Q: commande campagne X/jalons risques
+SQL: SELECT s.reference,s.status,s.customer,s.planned_eta,a.type as aleas,a.severity FROM shipments s LEFT JOIN alerts a ON s.id=a.shipment_id WHERE s.customer ILIKE'%X%'OR s.comments_internal ILIKE'%campagne%'LIMIT 10;
+Q: prêt facturation/ready billing
+SQL: SELECT reference,status,customer,delivery_date FROM shipments WHERE status IN('FINAL_DELIVERY','IMPORT_CLEARANCE')AND delivery_date IS NOT NULL LIMIT 10;
+Q: commandes prêtes opérationnellement
+SQL: SELECT reference,status,customer,planned_eta FROM shipments WHERE status='PRODUCTION_READY'LIMIT 10;
+Q: aléas client/annulation/report
+SQL: SELECT a.type,a.message,a.severity,s.customer FROM alerts a JOIN shipments s ON a.shipment_id=s.id WHERE a.category='CLIENT'AND a.active=true LIMIT 10;
+Q: deadline cut-off maritime
+SQL: SELECT reference,planned_etd,planned_etd-CURRENT_DATE as jours_avant_cutoff,status FROM shipments WHERE transport_mode ILIKE'%SEA%'AND planned_etd>=CURRENT_DATE ORDER BY planned_etd LIMIT 10;
+Q: expéditions première quinzaine/début mois
+SQL: SELECT reference,status,customer,planned_eta FROM shipments WHERE EXTRACT(DAY FROM planned_eta)<=15 AND EXTRACT(MONTH FROM planned_eta)=EXTRACT(MONTH FROM CURRENT_DATE)LIMIT 10;
+Q: traçabilité flux DDP/séquence jalons
+SQL: SELECT s.reference,e.type,e.timestamp,e.note FROM shipments s JOIN events e ON s.id=e.shipment_id WHERE s.incoterm='DDP'ORDER BY s.reference,e.timestamp LIMIT 20;
+Q: statut readiness/prêt expédition
+SQL: SELECT reference,status,qc_date,planned_etd FROM shipments WHERE status IN('PRODUCTION_READY','CONTAINER_READY_FOR_DEPARTURE')LIMIT 10;
+Q: DDP en transit temps réel
+SQL: SELECT reference,status,vessel,planned_eta FROM shipments WHERE incoterm='DDP'AND status ILIKE'%TRANSIT%'LIMIT 10;
+Q: commandes client X vue séquentielle
+SQL: SELECT s.reference,e.type,e.timestamp FROM shipments s JOIN events e ON s.id=e.shipment_id WHERE s.customer ILIKE'%X%'ORDER BY s.reference,e.timestamp LIMIT 30;
+Q: délai readiness schedule
+SQL: SELECT reference,status,planned_etd,planned_etd-CURRENT_DATE as jours_avant_depart FROM shipments WHERE status='PRODUCTION_READY'ORDER BY planned_etd LIMIT 10;
+Q: eco-friendly/environnement
+SQL: SELECT reference,eco_friendly_flag,customer,status FROM shipments WHERE eco_friendly_flag=true LIMIT 10;
+Q: budget/over budget
+SQL: SELECT reference,budget_status,customer,status FROM shipments WHERE budget_status='OVER_BUDGET'LIMIT 10;
+Q: commandes par incoterm
+SQL: SELECT incoterm,COUNT(*)as nb FROM shipments GROUP BY incoterm ORDER BY nb DESC;
+Q: schedule transporteur X
+SQL: SELECT carrier,pol,pod,etd,eta,transit_time_days,vessel_name FROM carrier_schedules WHERE carrier ILIKE'%X%'ORDER BY etd LIMIT 10;
+Q: meilleur schedule maritime
+SQL: SELECT carrier,pol,pod,etd,eta,transit_time_days FROM carrier_schedules WHERE mode='SEA'AND etd>=CURRENT_DATE ORDER BY transit_time_days,etd LIMIT 10;
+Q: volume par client
+SQL: SELECT customer,SUM(quantity)as total_qty,SUM(weight_kg)as total_kg FROM shipments GROUP BY customer ORDER BY total_qty DESC LIMIT 10;
+Q: commandes avec commentaires
+SQL: SELECT reference,customer,comments_internal FROM shipments WHERE comments_internal IS NOT NULL AND comments_internal!=''LIMIT 10;
+
 Q: {question}
 SQL:"""
 
@@ -94,7 +135,7 @@ R:"""
 class ChatbotEngine:
     def __init__(self, db, user):
         self.user = user
-        self.db = SQLDatabase(db_engine, include_tables=["shipments", "events", "alerts", "documents"])
+        self.db = SQLDatabase(db_engine, include_tables=["shipments", "events", "alerts", "documents", "carrier_schedules"])
         
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
         self.llm = Ollama(
