@@ -352,9 +352,11 @@ class ChatbotEngine:
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
         self.llm = Ollama(
             base_url=ollama_url,
-            model="llama3",
+            model="qwen2:1.5b",  # Fast model, installed on server
             temperature=0,
-            num_predict=200,
+            num_predict=150,
+            num_ctx=8192,  # Large context for long prompt
+            timeout=120,   # 2 min timeout
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
