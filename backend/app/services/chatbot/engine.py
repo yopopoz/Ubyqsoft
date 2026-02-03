@@ -29,9 +29,9 @@ class ChatbotEngine:
             temperature=0  # Force deterministic output
         )
 
-    def process(self, query: str) -> str:
+    def process_stream(self, query: str):
         """
-        Process the user query using a 3-phase reflection workflow:
+        Process the user query using a 3-phase reflection workflow and stream the response:
         1. Analysis & Translation (NL -> SQL)
         2. Execution (Run SQL)
         3. Synthesis (SQL Result -> NL)
@@ -58,9 +58,6 @@ class ChatbotEngine:
             )
 
             # Build the full chain
-            # 1. Generate SQL query
-            # 2. Execute SQL query
-            # 3. Generate final answer
             chain = (
                 RunnablePassthrough.assign(query=write_query).assign(
                     result=itemgetter("query") | execute_query
@@ -70,13 +67,11 @@ class ChatbotEngine:
                 | StrOutputParser()
             )
 
-            # Invoke the chain
-            response = chain.invoke({"question": query})
+            # Invoke the chain using stream
+            for chunk in chain.stream({"question": query}):
+                yield chunk
             
-            # Additional safety/fallback check could go here
-            return response
-
         except Exception as e:
-            # Fallback for errors (e.g., LLM offline, bad query)
+            # Fallback for errors
             print(f"Chatbot Error: {str(e)}")
-            return f"Désolé, je ne peux pas traiter votre demande pour le moment. Erreur technique: {str(e)}"
+            yield f"Désolé, je ne peux pas traiter votre demande pour le moment. Erreur technique: {str(e)}"

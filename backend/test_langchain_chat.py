@@ -20,14 +20,18 @@ def test_chatbot():
         # Test 1: Simple Count Query
         query1 = "Combien de shipments y a-t-il au total ?"
         print(f"\nQuery: {query1}")
-        response1 = engine.process(query1)
-        print(f"Response: {response1}")
+        print("Response: ", end="", flush=True)
+        for chunk in engine.process_stream(query1):
+            print(chunk, end="", flush=True)
+        print()
         
         # Test 2: Specific Data Query
         query2 = "Listez les références des 5 derniers shipments."
         print(f"\nQuery: {query2}")
-        response2 = engine.process(query2)
-        print(f"Response: {response2}")
+        print("Response: ", end="", flush=True)
+        for chunk in engine.process_stream(query2):
+            print(chunk, end="", flush=True)
+        print()
         
     except Exception as e:
         print(f"Error: {e}")

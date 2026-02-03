@@ -42,9 +42,38 @@ export default function Chatbot() {
                 },
                 body: JSON.stringify({ message: userMessage }),
             });
-            const data = await res.json();
-            setMessages((prev) => [...prev, { role: "assistant", content: data.response || "Désolé, je ne parviens pas à trouver d'information." }]);
-        } catch {
+
+            if (!res.body) throw new Error("No response body");
+
+            // Add an empty assistant message to start filling
+            setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let done = false;
+
+            while (!done) {
+                const { value, done: doneReading } = await reader.read();
+                done = doneReading;
+                const chunkValue = decoder.decode(value, { stream: !done });
+
+                setMessages((prev) => {
+                    const newMessages = [...prev];
+                    const lastIndex = newMessages.length - 1;
+                    const lastMessage = newMessages[lastIndex];
+
+                    if (lastMessage.role === "assistant") {
+                        newMessages[lastIndex] = {
+                            ...lastMessage,
+                            content: lastMessage.content + chunkValue
+                        };
+                    }
+                    return newMessages;
+                });
+            }
+
+        } catch (error) {
+            console.error(error);
             setMessages((prev) => [...prev, { role: "assistant", content: "Une erreur est survenue lors de la communication avec le serveur." }]);
         } finally {
             setLoading(false);
