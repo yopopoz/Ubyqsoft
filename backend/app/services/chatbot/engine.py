@@ -345,8 +345,8 @@ D: {result}
 R:"""
 
 class ChatbotEngine:
-    # Class-level cache for SQL patterns
-    _sql_cache = {}
+    # Class-level cache for repeated queries
+    _cache = {}
     
     def __init__(self, db, user):
         self.user = user
@@ -354,65 +354,91 @@ class ChatbotEngine:
         
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
         
-        # Optimized LLM for SQL generation (minimal tokens needed)
-        self.sql_llm = Ollama(
+        # Single ultra-fast LLM for SQL only
+        self.llm = Ollama(
             base_url=ollama_url,
-            model="mistral",
+            model="qwen2:1.5b",  # 5x smaller than mistral
             temperature=0,
-            num_predict=100,  # SQL queries are short
-            num_ctx=2048,     # Reduced context window
-            top_k=10,         # Faster sampling
-            top_p=0.5,        # More focused
-            repeat_penalty=1.1,
-        )
-        
-        # Optimized LLM for answers (slightly more tokens for response)
-        self.answer_llm = Ollama(
-            base_url=ollama_url,
-            model="mistral",
-            temperature=0,
-            num_predict=80,   # Short answers
-            num_ctx=1024,     # Minimal context for answer
-            top_k=10,
-            top_p=0.5,
+            num_predict=80,      # SQL is very short
+            num_ctx=4096,        # Need context for templates
+            top_k=5,             # Very focused
+            top_p=0.3,           # Deterministic
+            mirostat=2,          # Fast adaptive sampling
+            mirostat_tau=3.0,
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
-        self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
+
+    def _format_result(self, result: str) -> str:
+        """Format DB result as readable text - NO LLM needed"""
+        if not result or result == "[]" or result == "()":
+            return "Aucun résultat trouvé."
+        
+        # Clean up the result
+        result = result.strip()
+        if result.startswith("[") and result.endswith("]"):
+            # It's a list of tuples, format nicely
+            try:
+                import ast
+                rows = ast.literal_eval(result)
+                if not rows:
+                    return "Aucun résultat."
+                if len(rows) == 1 and len(rows[0]) == 1:
+                    return str(rows[0][0])
+                # Format as simple list
+                lines = []
+                for row in rows[:10]:  # Max 10 rows
+                    if isinstance(row, tuple):
+                        lines.append(" | ".join(str(v) if v else "-" for v in row))
+                    else:
+                        lines.append(str(row))
+                return "\n".join(lines)
+            except:
+                pass
+        return result[:500]  # Truncate long results
 
     def process_stream(self, query: str):
         try:
-            yield "🔍"
+            # Check cache first
+            cache_key = query.lower().strip()[:50]
+            if cache_key in self._cache:
+                yield self._cache[cache_key]
+                return
             
-            # Generate SQL
-            sql_chain = self.sql_prompt | self.sql_llm | StrOutputParser()
+            yield "🔍 "
+            
+            # Generate SQL (single LLM call)
+            sql_chain = self.sql_prompt | self.llm | StrOutputParser()
             raw_sql = sql_chain.invoke({"question": query})
             
             # Clean SQL
             sql = raw_sql.strip()
             if "```" in sql:
                 sql = sql.split("```")[1].replace("sql", "").strip()
+            if "SQL:" in sql:
+                sql = sql.split("SQL:")[-1].strip()
             sql = sql.split(";")[0] + ";"
+            sql = sql.replace("\n", " ").strip()
             
             # Execute query
             try:
                 result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
-                if not result or result == "[]":
-                    yield " Aucun résultat."
-                    return
             except Exception as e:
-                yield f" ❌ Erreur SQL: {str(e)[:50]}"
+                err = str(e)[:80]
+                yield f"❌ {err}"
                 return
             
-            yield " "
+            # Format result directly (NO 2nd LLM call!)
+            formatted = self._format_result(result)
             
-            # Stream answer with optimized LLM
-            answer_chain = self.answer_prompt | self.answer_llm | StrOutputParser()
-            for chunk in answer_chain.stream({"question": query, "result": result}):
-                yield chunk
+            # Cache successful results
+            if formatted and not formatted.startswith("❌"):
+                self._cache[cache_key] = formatted
+            
+            yield formatted
                 
         except Exception as e:
-            yield f" ❌ {str(e)[:50]}"
+            yield f"❌ {str(e)[:50]}"
 
 
 
