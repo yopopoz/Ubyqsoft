@@ -6,30 +6,37 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from ...database import engine as db_engine
 
-# Condensed SQL prompt for fast LLM processing (8GB RAM constraint)
-SQL_PROMPT = """PostgreSQL. Tables: shipments(id,reference,batch_number,customer,status,origin,destination,planned_etd,planned_eta,container_number,vessel,supplier,forwarder_name,transport_mode,rush_status,incoterm,qc_date,delivery_date), events(id,shipment_id,type,timestamp,note), alerts(id,type,severity,message,impact_days,active,linked_route), documents(id,shipment_id,type,filename,status), carrier_schedules(id,carrier,pol,pod,mode,etd,eta,transit_time_days)
+# Optimized SQL prompt for llama3 with 8GB RAM
+SQL_PROMPT = """Tu es un expert PostgreSQL. Génère UNIQUEMENT une requête SQL valide, sans explication.
 
-Synonymes: lot=batch_number, commande/PO=reference, aléa=alerts, jalon=events
+TABLES DISPONIBLES:
+- shipments: id, reference, batch_number, customer, status, origin, destination, planned_etd, planned_eta, container_number, vessel, supplier, forwarder_name, transport_mode, rush_status, incoterm, qc_date, delivery_date, compliance_status
+- events: id, shipment_id, type, timestamp, note
+- alerts: id, type, severity, message, impact_days, active, linked_route, shipment_id
+- documents: id, shipment_id, type, filename, status
+- carrier_schedules: id, carrier, pol, pod, mode, etd, eta, transit_time_days
 
-Exemples:
-Q: statut/où est X → SELECT reference,batch_number,status,planned_eta FROM shipments WHERE reference ILIKE'%X%'OR batch_number ILIKE'%X%'LIMIT 5;
-Q: retards → SELECT reference,status,planned_eta FROM shipments WHERE planned_eta<CURRENT_DATE AND status NOT ILIKE'%DELIVER%'LIMIT 10;
-Q: ETD/ETA X → SELECT reference,planned_etd,planned_eta,vessel FROM shipments WHERE reference ILIKE'%X%'OR batch_number ILIKE'%X%'LIMIT 5;
-Q: aléas actifs → SELECT type,severity,message,impact_days FROM alerts WHERE active=true ORDER BY severity DESC LIMIT 10;
-Q: jalons X → SELECT e.type,e.timestamp FROM events e JOIN shipments s ON e.shipment_id=s.id WHERE s.reference ILIKE'%X%'ORDER BY e.timestamp;
-Q: documents X → SELECT type,filename,status FROM documents d JOIN shipments s ON d.shipment_id=s.id WHERE s.reference ILIKE'%X%';
-Q: urgents/rush → SELECT reference,status,planned_eta,customer FROM shipments WHERE rush_status=true LIMIT 10;
-Q: en transit → SELECT reference,vessel,planned_eta FROM shipments WHERE status ILIKE'%TRANSIT%'LIMIT 10;
-Q: schedules/horaires → SELECT carrier,pol,pod,etd,eta,transit_time_days FROM carrier_schedules WHERE etd>=CURRENT_DATE ORDER BY etd LIMIT 10;
-Q: client X → SELECT reference,status,planned_eta FROM shipments WHERE customer ILIKE'%X%'LIMIT 10;
-Q: fournisseur X → SELECT reference,status,supplier FROM shipments WHERE supplier ILIKE'%X%'LIMIT 10;
-Q: conteneur X → SELECT reference,container_number,vessel,status FROM shipments WHERE container_number ILIKE'%X%'OR reference ILIKE'%X%'LIMIT 5;
-Q: DDP → SELECT reference,status,incoterm,planned_eta FROM shipments WHERE incoterm='DDP'LIMIT 10;
-Q: maritime/aérien → SELECT reference,transport_mode,status FROM shipments WHERE transport_mode ILIKE'%X%'LIMIT 10;
-Q: arrivées 7j → SELECT reference,planned_eta,destination FROM shipments WHERE planned_eta BETWEEN CURRENT_DATE AND CURRENT_DATE+7 LIMIT 10;
-Q: stats statut → SELECT status,COUNT(*)as nb FROM shipments GROUP BY status;
-Q: QC/qualité X → SELECT reference,qc_date,compliance_status FROM shipments WHERE reference ILIKE'%X%'LIMIT 5;
-Q: météo/congestion → SELECT type,message,linked_route FROM alerts WHERE type IN('WEATHER','PORT_CONGESTION')AND active=true LIMIT 10;
+RÈGLES IMPORTANTES:
+- "lot" ou numéro de lot = chercher dans batch_number
+- "commande" ou "PO" = chercher dans reference
+- Pour chercher une référence X: WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%'
+- Toujours ajouter LIMIT 10
+
+EXEMPLES:
+Q: statut commande 25LAN034-16
+SQL: SELECT reference, batch_number, status, planned_eta FROM shipments WHERE reference ILIKE '%25LAN034-16%' OR batch_number ILIKE '%25LAN034-16%' LIMIT 5;
+
+Q: retards
+SQL: SELECT reference, status, planned_eta FROM shipments WHERE planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' LIMIT 10;
+
+Q: aléas actifs
+SQL: SELECT type, severity, message FROM alerts WHERE active = true ORDER BY severity DESC LIMIT 10;
+
+Q: jalons de la commande X
+SQL: SELECT e.type, e.timestamp FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE s.reference ILIKE '%X%' ORDER BY e.timestamp;
+
+Q: en transit
+SQL: SELECT reference, vessel, planned_eta FROM shipments WHERE status ILIKE '%TRANSIT%' LIMIT 10;
 
 Q: {question}
 SQL:"""
@@ -47,11 +54,11 @@ class ChatbotEngine:
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
         self.llm = Ollama(
             base_url=ollama_url,
-            model="qwen2:1.5b",  # Fast model, installed on server
+            model="llama3",  # Better quality than qwen
             temperature=0,
             num_predict=150,
-            num_ctx=8192,  # Large context for long prompt
-            timeout=120,   # 2 min timeout
+            num_ctx=4096,
+            timeout=180,  # 3 min timeout for llama3
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
