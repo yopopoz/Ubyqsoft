@@ -43,6 +43,11 @@ export default function Chatbot() {
                 body: JSON.stringify({ message: userMessage }),
             });
 
+            if (!res.ok) {
+                const errText = await res.text().catch(() => res.statusText);
+                throw new Error(errText || `Erreur ${res.status}`);
+            }
+
             if (!res.body) throw new Error("No response body");
 
             // Add an empty assistant message to start filling
@@ -72,9 +77,10 @@ export default function Chatbot() {
                 });
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            setMessages((prev) => [...prev, { role: "assistant", content: "Une erreur est survenue lors de la communication avec le serveur." }]);
+            const errorMessage = error.message || "Une erreur est survenue lors de la communication avec le serveur.";
+            setMessages((prev) => [...prev, { role: "assistant", content: `❌ ${errorMessage}` }]);
         } finally {
             setLoading(false);
         }
