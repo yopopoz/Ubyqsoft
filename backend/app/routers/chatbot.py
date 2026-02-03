@@ -26,5 +26,10 @@ def query_chatbot(request: ChatRequest, db: Session = Depends(get_db), current_u
     
     return StreamingResponse(
         engine.process_stream(request.message), 
-        media_type="text/plain"
+        media_type="text/plain",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache", 
+            "Connection": "keep-alive"
+        }
     )
