@@ -363,29 +363,49 @@ class ChatbotEngine:
         self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
 
     def process_stream(self, query: str):
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        
         try:
+            logger.info(f"[CHATBOT] Starting query: {query[:50]}...")
             yield "🔍..."
             
+            logger.info("[CHATBOT] Building SQL chain...")
             sql_chain = self.sql_prompt | self.llm | StrOutputParser()
+            
+            logger.info("[CHATBOT] Invoking LLM for SQL...")
             raw_sql = sql_chain.invoke({"question": query})
+            logger.info(f"[CHATBOT] Got SQL: {raw_sql[:100]}...")
             
             sql = raw_sql.strip()
             if "```" in sql:
                 sql = sql.split("```")[1].replace("sql", "").strip()
             sql = sql.split(";")[0] + ";"
             
+            logger.info(f"[CHATBOT] Executing SQL: {sql[:100]}...")
             try:
                 result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
+                logger.info(f"[CHATBOT] Query result: {str(result)[:100]}...")
             except Exception as e:
+                logger.error(f"[CHATBOT] SQL Error: {str(e)}")
                 result = f"Erreur: {str(e)}"
             
             yield "\n"
             
+            logger.info("[CHATBOT] Building answer chain...")
             answer_chain = self.answer_prompt | self.llm | StrOutputParser()
+            
+            logger.info("[CHATBOT] Streaming answer...")
             for chunk in answer_chain.stream({"question": query, "result": result}):
                 yield chunk
+            
+            logger.info("[CHATBOT] Done!")
                 
         except Exception as e:
+            import traceback
+            logger.error(f"[CHATBOT] Exception: {str(e)}")
+            logger.error(traceback.format_exc())
             yield f"❌ {str(e)}"
 
 
