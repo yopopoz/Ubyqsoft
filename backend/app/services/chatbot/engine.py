@@ -124,6 +124,64 @@ SQL: SELECT customer,SUM(quantity)as total_qty,SUM(weight_kg)as total_kg FROM sh
 Q: commandes avec commentaires
 SQL: SELECT reference,customer,comments_internal FROM shipments WHERE comments_internal IS NOT NULL AND comments_internal!=''LIMIT 10;
 
+=== ACHATS/PROCUREMENT ===
+Q: fin production ETD maritime/quand finaliser ETD
+SQL: SELECT reference,status,qc_date,planned_etd,planned_etd-qc_date as delai_prod_etd FROM shipments WHERE status='PRODUCTION_READY'ORDER BY qc_date LIMIT 10;
+Q: commande achat urgente/délai urgent
+SQL: SELECT reference,status,planned_etd,rush_status FROM shipments WHERE rush_status=true ORDER BY planned_etd LIMIT 10;
+Q: aléas fournisseurs/retards fabrication
+SQL: SELECT a.type,a.message,a.severity,a.impact_days,s.supplier FROM alerts a JOIN shipments s ON a.shipment_id=s.id WHERE a.type IN('STRIKE','CUSTOMS')AND a.active=true AND s.supplier IS NOT NULL LIMIT 10;
+Q: fournisseurs sans aléas
+SQL: SELECT DISTINCT s.supplier,COUNT(*)as nb_commandes FROM shipments s LEFT JOIN alerts a ON s.id=a.shipment_id WHERE a.id IS NULL AND s.supplier IS NOT NULL GROUP BY s.supplier ORDER BY nb_commandes DESC LIMIT 10;
+Q: budget inflation/over budget achats
+SQL: SELECT reference,supplier,budget_status FROM shipments WHERE budget_status='OVER_BUDGET'AND supplier IS NOT NULL LIMIT 10;
+Q: aléas réglementaires/conformité taxes
+SQL: SELECT type,message,severity,impact_days FROM alerts WHERE type='CUSTOMS'AND active=true LIMIT 10;
+Q: qualité fournisseurs/lots défectueux
+SQL: SELECT s.supplier,s.reference,s.compliance_status,d.status as qc_status FROM shipments s LEFT JOIN documents d ON s.id=d.shipment_id AND d.type='QC_REPORT'WHERE s.compliance_status!='CLEARED'LIMIT 10;
+Q: historique aléas par fournisseur
+SQL: SELECT s.supplier,a.type,COUNT(*)as nb_aleas,AVG(a.impact_days)as impact_moyen FROM alerts a JOIN shipments s ON a.shipment_id=s.id WHERE s.supplier IS NOT NULL GROUP BY s.supplier,a.type ORDER BY nb_aleas DESC LIMIT 15;
+Q: contraintes environnementales fournisseurs
+SQL: SELECT supplier,reference,eco_friendly_flag FROM shipments WHERE supplier IS NOT NULL ORDER BY eco_friendly_flag DESC,supplier LIMIT 10;
+Q: pannes machines/impact planning
+SQL: SELECT type,message,impact_days,created_at FROM alerts WHERE message ILIKE'%machine%'OR message ILIKE'%panne%'AND active=true LIMIT 10;
+Q: grèves ateliers/aléas humains fournisseurs
+SQL: SELECT type,message,severity,impact_days FROM alerts WHERE type='STRIKE'AND active=true LIMIT 10;
+Q: fiabilité fournisseurs KPI
+SQL: SELECT s.supplier,COUNT(*)as total,SUM(CASE WHEN s.planned_eta>=s.delivery_date THEN 1 ELSE 0 END)as on_time FROM shipments s WHERE s.supplier IS NOT NULL AND s.delivery_date IS NOT NULL GROUP BY s.supplier LIMIT 10;
+Q: aléas financiers fournisseurs/cash change
+SQL: SELECT type,message,severity,impact_days FROM alerts WHERE type='FINANCIAL'AND active=true LIMIT 10;
+Q: rapport aléas achats
+SQL: SELECT a.type,COUNT(*)as nb,AVG(a.impact_days)as impact_moyen FROM alerts a JOIN shipments s ON a.shipment_id=s.id WHERE s.supplier IS NOT NULL AND a.active=true GROUP BY a.type;
+Q: blocage approvisionnement/matières
+SQL: SELECT type,message,severity,linked_route FROM alerts WHERE message ILIKE'%matière%'OR message ILIKE'%approvisionnement%'AND active=true LIMIT 10;
+Q: achats aériens urgents
+SQL: SELECT reference,supplier,transport_mode,planned_etd FROM shipments WHERE transport_mode ILIKE'%AIR%'AND rush_status=true LIMIT 10;
+Q: aléas transport amont/congestion routière
+SQL: SELECT type,message,severity,linked_route FROM alerts WHERE type='PORT_CONGESTION'OR message ILIKE'%transport%'AND active=true LIMIT 10;
+Q: nouveaux fournisseurs/risque évaluation
+SQL: SELECT supplier,COUNT(*)as nb_commandes,MIN(created_at)as premiere_commande FROM shipments WHERE supplier IS NOT NULL GROUP BY supplier HAVING COUNT(*)<3 ORDER BY premiere_commande DESC LIMIT 10;
+Q: aléas pandémiques/quarantaines
+SQL: SELECT type,message,severity,impact_days,linked_route FROM alerts WHERE type='PANDEMIC'AND active=true LIMIT 10;
+Q: production prête ETD transporteur
+SQL: SELECT s.reference,s.status,s.planned_etd,cs.carrier,cs.etd as schedule_etd FROM shipments s,carrier_schedules cs WHERE s.status='PRODUCTION_READY'AND cs.etd>=s.planned_etd ORDER BY cs.etd LIMIT 10;
+Q: achats première quinzaine
+SQL: SELECT reference,supplier,status,planned_eta FROM shipments WHERE supplier IS NOT NULL AND EXTRACT(DAY FROM planned_eta)<=15 AND EXTRACT(MONTH FROM planned_eta)=EXTRACT(MONTH FROM CURRENT_DATE)LIMIT 10;
+Q: traçabilité achats DDP
+SQL: SELECT s.reference,s.supplier,e.type,e.timestamp FROM shipments s JOIN events e ON s.id=e.shipment_id WHERE s.incoterm='DDP'AND s.supplier IS NOT NULL ORDER BY s.reference,e.timestamp LIMIT 20;
+Q: readiness achat livraison
+SQL: SELECT reference,supplier,status,planned_etd FROM shipments WHERE status='PRODUCTION_READY'AND supplier IS NOT NULL ORDER BY planned_etd LIMIT 10;
+Q: fournisseurs prêts schedule mois
+SQL: SELECT s.supplier,s.reference,s.status,s.planned_etd FROM shipments s WHERE s.status IN('PRODUCTION_READY','CONTAINER_READY_FOR_DEPARTURE')AND s.supplier IS NOT NULL ORDER BY s.planned_etd LIMIT 10;
+Q: post-achat expédition jalons
+SQL: SELECT s.reference,s.supplier,e.type,e.timestamp FROM shipments s JOIN events e ON s.id=e.shipment_id WHERE s.supplier IS NOT NULL ORDER BY s.reference,e.timestamp LIMIT 30;
+Q: achats transit aérien
+SQL: SELECT reference,supplier,status,transport_mode,planned_eta FROM shipments WHERE transport_mode ILIKE'%AIR%'AND status ILIKE'%TRANSIT%'AND supplier IS NOT NULL LIMIT 10;
+Q: achat lié schedule transporteur
+SQL: SELECT s.reference,s.supplier,s.planned_etd,cs.carrier,cs.etd FROM shipments s,carrier_schedules cs WHERE s.planned_etd BETWEEN cs.etd-INTERVAL'3 days'AND cs.etd+INTERVAL'3 days'LIMIT 10;
+Q: étapes achat DDP complet
+SQL: SELECT s.reference,s.supplier,s.incoterm,e.type,e.timestamp,e.note FROM shipments s JOIN events e ON s.id=e.shipment_id WHERE s.incoterm='DDP'ORDER BY s.reference,e.timestamp LIMIT 30;
+
 Q: {question}
 SQL:"""
 
