@@ -345,96 +345,47 @@ D: {result}
 R:"""
 
 class ChatbotEngine:
-    # Class-level cache for repeated queries
-    _cache = {}
-    
     def __init__(self, db, user):
         self.user = user
         self.db = SQLDatabase(db_engine, include_tables=["shipments", "events", "alerts", "documents", "carrier_schedules"])
         
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
-        
-        # Single fast LLM for SQL only
         self.llm = Ollama(
             base_url=ollama_url,
-            model="llama3",  # Try llama3
+            model="llama3",
             temperature=0,
-            num_predict=100,
-            num_ctx=4096,
+            num_predict=200,
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
-
-    def _format_result(self, result: str) -> str:
-        """Format DB result as readable text - NO LLM needed"""
-        if not result or result == "[]" or result == "()":
-            return "Aucun résultat trouvé."
-        
-        # Clean up the result
-        result = result.strip()
-        if result.startswith("[") and result.endswith("]"):
-            # It's a list of tuples, format nicely
-            try:
-                import ast
-                rows = ast.literal_eval(result)
-                if not rows:
-                    return "Aucun résultat."
-                if len(rows) == 1 and len(rows[0]) == 1:
-                    return str(rows[0][0])
-                # Format as simple list
-                lines = []
-                for row in rows[:10]:  # Max 10 rows
-                    if isinstance(row, tuple):
-                        lines.append(" | ".join(str(v) if v else "-" for v in row))
-                    else:
-                        lines.append(str(row))
-                return "\n".join(lines)
-            except:
-                pass
-        return result[:500]  # Truncate long results
+        self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
 
     def process_stream(self, query: str):
         try:
-            # Check cache first
-            cache_key = query.lower().strip()[:50]
-            if cache_key in self._cache:
-                yield self._cache[cache_key]
-                return
+            yield "🔍..."
             
-            yield "🔍 "
-            
-            # Generate SQL (single LLM call)
             sql_chain = self.sql_prompt | self.llm | StrOutputParser()
             raw_sql = sql_chain.invoke({"question": query})
             
-            # Clean SQL
             sql = raw_sql.strip()
             if "```" in sql:
                 sql = sql.split("```")[1].replace("sql", "").strip()
-            if "SQL:" in sql:
-                sql = sql.split("SQL:")[-1].strip()
             sql = sql.split(";")[0] + ";"
-            sql = sql.replace("\n", " ").strip()
             
-            # Execute query
             try:
                 result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
             except Exception as e:
-                err = str(e)[:80]
-                yield f"❌ {err}"
-                return
+                result = f"Erreur: {str(e)}"
             
-            # Format result directly (NO 2nd LLM call!)
-            formatted = self._format_result(result)
+            yield "\n"
             
-            # Cache successful results
-            if formatted and not formatted.startswith("❌"):
-                self._cache[cache_key] = formatted
-            
-            yield formatted
+            answer_chain = self.answer_prompt | self.llm | StrOutputParser()
+            for chunk in answer_chain.stream({"question": query, "result": result}):
+                yield chunk
                 
         except Exception as e:
-            yield f"❌ {str(e)[:50]}"
+            yield f"❌ {str(e)}"
+
 
 
 
