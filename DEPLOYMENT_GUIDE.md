@@ -32,59 +32,122 @@ Structure recommandée sur le serveur :
   └── proxy/           <-- (Optionnel) Un proxy global pour gérer les domaines
 ```
 
-### Méthode Automatisée (Recommandée)
+### Méthode 1 : Git (Recommandé pour les mises à jour faciles)
+**Avantage** : Plus rapide pour les mises à jour suivantes (juste `git pull`).
+**Pré-requis** : Avoir un compte GitHub ou GitLab.
 
-Nous avons créé des scripts pour automatiser tout le processus.
+1.  **Sur votre PC Local** (si ce n'est pas déjà fait) :
+    ```powershell
+    # Initialiser git
+    git init
+    git add .
+    git commit -m "Déploiement initial"
+    
+    # Lier à votre dépôt distant (exemple GitHub)
+    git branch -M main
+    git remote add origin https://github.com/VOTRE_USER/VOTRE_PROJET.git
+    git push -u origin main
+    ```
 
-1.  **Préparation du Git** :
-    Assurez-vous que tout votre code est commité et "pushé" sur votre dépôt GitHub/GitLab.
+2.  **Sur le Serveur** :
     ```bash
-    git push origin main
+    # Créer le dossier et cloner (une seule fois au début)
+    # Note : Il faudra peut-être générer une clé SSH sur le serveur pour GitHub/GitLab
+    git clone https://github.com/VOTRE_USER/VOTRE_PROJET.git /opt/bbox-l
     ```
 
-2.  **Configuration Initiale du Serveur** (À faire une seule fois) :
-    Ce script installe Docker, Git, et prépare les dossiers.
-    ```powershell
-    # Depuis votre PC local (dans le dossier du projet)
-    ./scripts/setup_server.sh <IP_DU_SERVEUR>
-    # Exemple : ./scripts/setup_server.sh 82.112.253.118
+3.  **Pour mettre à jour plus tard** :
+    ```bash
+    cd /opt/bbox-l
+    git pull
+    docker compose -f docker-compose.prod.yml up -d --build
     ```
 
-3.  **Déploiement / Mise à jour** :
-    Ce script télécharge la dernière version du code et redémarre les conteneurs.
-    ```powershell
-    # Usage : ./scripts/deploy.sh <IP_DU_SERVEUR> <URL_DU_REPO_GIT>
-    ./scripts/deploy.sh 82.112.253.118 https://github.com/VOTRE_USER/VOTRE_PROJET.git
-    ```
+### Méthode 2 : SCP (Copie directe sans Git)
+Utilisez cette méthode si vous ne voulez pas mettre votre code sur GitHub/GitLab.
 
-### Méthode Manuelle (Alternative)
 
-Si vous préférez tout faire manuellement ou si les scripts ne fonctionnent pas pour une raison spécifique.
-
-#### 1. Transfert du code
-**Via Git** :
-```bash
-ssh root@<IP_DU_SERVEUR>
-cd /opt/bbox-l
-git pull
-```
-
-**Via SCP** (Copie directe) :
 ```powershell
-scp -r "c:\Users\pc\Desktop\BBOX L\frontend" root@<IP_DU_SERVEUR>:/opt/bbox-l/
-scp -r "c:\Users\pc\Desktop\BBOX L\backend" root@<IP_DU_SERVEUR>:/opt/bbox-l/
-scp "docker-compose.prod.yml" root@<IP_DU_SERVEUR>:/opt/bbox-l/
+# 1. Créer le dossier sur le serveur
+ssh root@82.112.253.118 "mkdir -p /opt/bbox-l"
+
+# 2. Transférer les fichiers
+# (Il vous demandera votre mot de passe à chaque fois sauf si vous avez une clé SSH)
+
+scp -r "c:\Users\pc\Desktop\BBOX L\frontend" root@82.112.253.118:/opt/bbox-l/
+scp -r "c:\Users\pc\Desktop\BBOX L\backend" root@82.112.253.118:/opt/bbox-l/
+scp -r "c:\Users\pc\Desktop\BBOX L\nginx" root@82.112.253.118:/opt/bbox-l/
+scp "c:\Users\pc\Desktop\BBOX L\docker-compose.prod.yml" root@82.112.253.118:/opt/bbox-l/
 ```
 
-#### 2. Lancement
+## 3. Lancer l'application
+Sur le serveur :
+
 ```bash
+cd /opt/bbox-l
+
+# Lancer les conteneurs (Backend + Frontend + Base de données)
+# Note : Nginx n'est plus géré par Docker dans cette configuration
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-## 4. Configuration HTTPS et Domaine
+## 3b. Configuration de Nginx (Sur le serveur)
+Puisque vous utilisez le Nginx installé sur la machine hôte :
 
-Une fois l'application lancée, configurez votre domaine pour pointer vers l'IP du serveur.
-Pour le HTTPS, vous pouvez utiliser un reverse proxy comme Nginx Proxy Manager ou Traefik, ou configurer Certbot sur le Nginx hôte.
+1.  **Copier la configuration** :
+    ```bash
+    # Copier le fichier de site vers la configuration Nginx
+    cp nginx/nginx-site.conf /etc/nginx/sites-available/bbox-l
+    ```
+
+2.  **Activer le site** :
+    ```bash
+    # Créer un lien symbolique
+    ln -s /etc/nginx/sites-available/bbox-l /etc/nginx/sites-enabled/
+    
+    # (Optionnel) Désactiver le site par défaut si nécessaire
+    rm /etc/nginx/sites-enabled/default
+    ```
+
+3.  **Vérifier et Redémarrer Nginx** :
+    ```bash
+    nginx -t
+    systemctl reload nginx
+    ```
+
+## 4. Configuration (Optionnel mais recommandé)
+Pour changer les mots de passe ou secrets, créez un fichier `.env` sur le serveur dans `/opt/bbox-l` :
+
+```env
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=votre_mot_de_passe_secret
+POSTGRES_DB=logistics_prod
+JWT_SECRET=super_secret_jwt_key
+FRONTEND_URL=http://votre_domaine.com
+```
+
+Puis relancez les conteneurs :
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+## 5. Accès
+L'application est maintenant servie par votre Nginx local qui redirige vers les conteneurs Docker.
+- Frontend : `http://votre_ip_serveur`
+- API : `http://votre_ip_serveur/api/health`
+
+## Notes
+- Si vous utilisez un domaine, pointez les enregistrements DNS A vers l'IP du VPS.
+- Pour le HTTPS (Recommandé pour puretrack.cloud) :
+  ```bash
+  # 1. Installer Certbot
+  apt install certbot python3-certbot-nginx -y
+
+  # 2. Générer le certificat (Nginx doit être configuré avec puretrack.cloud)
+  certbot --nginx -d puretrack.cloud -d www.puretrack.cloud
+  
+  # 3. Suivre les instructions à l'écran (choisir rediriger HTTP vers HTTPS)
+  ```
 
 ## 6. Initialisation de la Base de Données (Premier lancement)
 Lors de la première installation, la base de données est vide. Vous devez exécuter une commande pour créer l'utilisateur administrateur par défaut.
@@ -99,4 +162,12 @@ docker compose -f docker-compose.prod.yml exec backend python -m app.seed_data
 **Identifiants par défaut :**
 - Email : `admin@example.com`
 - Mot de passe : `admin`
+
+## 7. Configuration de l'IA (Ollama)
+Le chatbot nécessite le modèle d'IA `llama3`. Vous devez le télécharger une seule fois :
+
+```bash
+docker exec -it logistics_ollama_prod ollama pull llama3
+```
+Cette opération peut prendre quelques minutes selon la vitesse de connexion du serveur.
 
