@@ -30,45 +30,47 @@ id, carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name, voyage_re
 
 Synonymes: lot→batch_number, commande/PO→reference, aléa/risque→alerts, jalon/étape→events, qualité/QC→qc_date ou documents, retard→planned_eta<CURRENT_DATE, schedule/horaire→carrier_schedules
 
+RÈGLE IMPORTANTE: Si l'utilisateur mentionne "lot" ou un numéro de lot, chercher avec batch_number. Sinon chercher avec reference. Pour être sûr, combiner les deux: (reference ILIKE'%X%'OR batch_number ILIKE'%X%')
+
 === TEMPLATES ===
-Q: où est ma commande X/position X
-SQL: SELECT s.reference,s.status,e.type as dernier_jalon,e.timestamp FROM shipments s LEFT JOIN events e ON s.id=e.shipment_id WHERE s.reference ILIKE'%X%'ORDER BY e.timestamp DESC LIMIT 1;
-Q: statut détaillé X/production/QC/transit
-SQL: SELECT s.reference,s.status,s.qc_date,s.planned_etd,s.planned_eta,s.transport_mode FROM shipments s WHERE s.reference ILIKE'%X%'LIMIT 5;
+Q: où est ma commande X/position X/lot X
+SQL: SELECT s.reference,s.batch_number,s.status,e.type as dernier_jalon,e.timestamp FROM shipments s LEFT JOIN events e ON s.id=e.shipment_id WHERE(s.reference ILIKE'%X%'OR s.batch_number ILIKE'%X%')ORDER BY e.timestamp DESC LIMIT 1;
+Q: statut détaillé X/lot X/production/QC/transit
+SQL: SELECT s.reference,s.batch_number,s.status,s.qc_date,s.planned_etd,s.planned_eta,s.transport_mode FROM shipments s WHERE(s.reference ILIKE'%X%'OR s.batch_number ILIKE'%X%')LIMIT 5;
 Q: retards signalés/articles en retard
 SQL: SELECT reference,status,planned_eta,planned_eta-CURRENT_DATE as jours_retard FROM shipments WHERE planned_eta<CURRENT_DATE AND status NOT ILIKE'%DELIVER%'LIMIT 10;
-Q: ETD/date départ usine X
-SQL: SELECT reference,planned_etd,origin,status FROM shipments WHERE reference ILIKE'%X%'OR container_number ILIKE'%X%'LIMIT 5;
-Q: ETA/arrivée prévue X
-SQL: SELECT reference,planned_eta,destination,vessel FROM shipments WHERE reference ILIKE'%X%'LIMIT 5;
+Q: ETD/date départ usine X/lot X
+SQL: SELECT reference,batch_number,planned_etd,origin,status FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%'OR container_number ILIKE'%X%')LIMIT 5;
+Q: ETA/arrivée prévue X/lot X
+SQL: SELECT reference,batch_number,planned_eta,destination,vessel FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%')LIMIT 5;
 Q: aléas météo/congestion ports
 SQL: SELECT type,severity,message,impact_days,linked_route FROM alerts WHERE type IN('WEATHER','PORT_CONGESTION')AND active=true ORDER BY created_at DESC LIMIT 10;
 Q: aléas opérationnels/grèves
 SQL: SELECT type,severity,message,impact_days FROM alerts WHERE type IN('STRIKE','CUSTOMS')AND active=true LIMIT 10;
-Q: QC validé/contrôle qualité X
-SQL: SELECT reference,qc_date,compliance_status FROM shipments WHERE reference ILIKE'%X%'LIMIT 5;
-Q: rapport qualité/documents QC X
-SQL: SELECT d.type,d.filename,d.status,d.uploaded_at FROM documents d JOIN shipments s ON d.shipment_id=s.id WHERE s.reference ILIKE'%X%'AND d.type='QC_REPORT'LIMIT 5;
-Q: date livraison X
-SQL: SELECT reference,delivery_date,planned_eta,destination FROM shipments WHERE reference ILIKE'%X%'LIMIT 5;
+Q: QC validé/contrôle qualité X/lot X
+SQL: SELECT reference,batch_number,qc_date,compliance_status FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%')LIMIT 5;
+Q: rapport qualité/documents QC X/lot X
+SQL: SELECT d.type,d.filename,d.status,d.uploaded_at FROM documents d JOIN shipments s ON d.shipment_id=s.id WHERE(s.reference ILIKE'%X%'OR s.batch_number ILIKE'%X%')AND d.type='QC_REPORT'LIMIT 5;
+Q: date livraison X/lot X
+SQL: SELECT reference,batch_number,delivery_date,planned_eta,destination FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%')LIMIT 5;
 Q: aléas fournisseur
 SQL: SELECT a.type,a.message,a.severity,s.supplier FROM alerts a JOIN shipments s ON a.shipment_id=s.id WHERE a.active=true LIMIT 10;
-Q: numéro conteneur/tracking X
-SQL: SELECT reference,container_number,seal_number,vessel,bl_number FROM shipments WHERE reference ILIKE'%X%'OR customer ILIKE'%X%'LIMIT 10;
+Q: numéro conteneur/tracking X/lot X
+SQL: SELECT reference,batch_number,container_number,seal_number,vessel FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%'OR customer ILIKE'%X%')LIMIT 10;
 Q: aléas actifs/risques en cours
 SQL: SELECT type,severity,message,impact_days,linked_route FROM alerts WHERE active=true ORDER BY severity DESC,created_at DESC LIMIT 15;
-Q: historique jalons X
-SQL: SELECT e.type,e.timestamp,e.note FROM events e JOIN shipments s ON e.shipment_id=s.id WHERE s.reference ILIKE'%X%'ORDER BY e.timestamp DESC LIMIT 20;
+Q: historique jalons X/lot X
+SQL: SELECT s.reference,s.batch_number,e.type,e.timestamp,e.note FROM events e JOIN shipments s ON e.shipment_id=s.id WHERE(s.reference ILIKE'%X%'OR s.batch_number ILIKE'%X%')ORDER BY e.timestamp DESC LIMIT 20;
 Q: commandes urgentes/rush
 SQL: SELECT reference,status,planned_eta,customer FROM shipments WHERE rush_status=true LIMIT 10;
-Q: documents X/BL/facture
-SQL: SELECT d.type,d.filename,d.status FROM documents d JOIN shipments s ON d.shipment_id=s.id WHERE s.reference ILIKE'%X%'LIMIT 10;
+Q: documents X/lot X/BL/facture
+SQL: SELECT d.type,d.filename,d.status FROM documents d JOIN shipments s ON d.shipment_id=s.id WHERE(s.reference ILIKE'%X%'OR s.batch_number ILIKE'%X%')LIMIT 10;
 Q: aléas par route/maritime
 SQL: SELECT type,message,linked_route,impact_days FROM alerts WHERE linked_route IS NOT NULL AND active=true LIMIT 10;
-Q: conformité/compliance X
-SQL: SELECT reference,compliance_status,qc_date FROM shipments WHERE reference ILIKE'%X%'LIMIT 5;
-Q: poids/volume X
-SQL: SELECT reference,weight_kg,volume_cbm,quantity,nb_cartons FROM shipments WHERE reference ILIKE'%X%'LIMIT 5;
+Q: conformité/compliance X/lot X
+SQL: SELECT reference,batch_number,compliance_status,qc_date FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%')LIMIT 5;
+Q: poids/volume X/lot X
+SQL: SELECT reference,batch_number,weight_kg,volume_cbm,quantity FROM shipments WHERE(reference ILIKE'%X%'OR batch_number ILIKE'%X%')LIMIT 5;
 Q: mode transport X/aérien/maritime
 SQL: SELECT reference,transport_mode,vessel,status FROM shipments WHERE transport_mode ILIKE'%X%'LIMIT 10;
 Q: expéditions mois
