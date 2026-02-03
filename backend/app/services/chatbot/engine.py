@@ -6,9 +6,11 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from ...database import engine as db_engine
 
-# Shorter SQL prompt for speed
-SQL_PROMPT = """Traduis en SQL PostgreSQL. Table: shipments (id, reference, batch_number, sku, status, customer, origin, destination, planned_etd, planned_eta, container_number, vessel, quantity).
-"lot"=batch_number, "commande"=reference, "statut"=status. Utilise ILIKE. LIMIT 5.
+# SQL prompt with EXACT column names from database
+SQL_PROMPT = """Traduis en SQL PostgreSQL.
+Table shipments: id, reference, order_number, batch_number, sku, customer, status, origin, destination, planned_etd, planned_eta, container_number, seal_number, vessel, product_description, quantity, weight_kg, volume_cbm, supplier, forwarder_name, mad_date, its_date, delivery_date, created_at.
+Vocabulaire: "lot"=batch_number, "commande"=reference, "statut"=status, "date"=planned_eta ou planned_etd.
+Utilise ILIKE pour texte. LIMIT 5.
 
 Question: {question}
 SQL:"""
