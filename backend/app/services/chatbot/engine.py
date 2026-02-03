@@ -345,16 +345,36 @@ D: {result}
 R:"""
 
 class ChatbotEngine:
+    # Class-level cache for SQL patterns
+    _sql_cache = {}
+    
     def __init__(self, db, user):
         self.user = user
         self.db = SQLDatabase(db_engine, include_tables=["shipments", "events", "alerts", "documents", "carrier_schedules"])
         
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
-        self.llm = Ollama(
+        
+        # Optimized LLM for SQL generation (minimal tokens needed)
+        self.sql_llm = Ollama(
             base_url=ollama_url,
             model="mistral",
             temperature=0,
-            num_predict=200,
+            num_predict=100,  # SQL queries are short
+            num_ctx=2048,     # Reduced context window
+            top_k=10,         # Faster sampling
+            top_p=0.5,        # More focused
+            repeat_penalty=1.1,
+        )
+        
+        # Optimized LLM for answers (slightly more tokens for response)
+        self.answer_llm = Ollama(
+            base_url=ollama_url,
+            model="mistral",
+            temperature=0,
+            num_predict=80,   # Short answers
+            num_ctx=1024,     # Minimal context for answer
+            top_k=10,
+            top_p=0.5,
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
@@ -362,29 +382,38 @@ class ChatbotEngine:
 
     def process_stream(self, query: str):
         try:
-            yield "🔍..."
+            yield "🔍"
             
-            sql_chain = self.sql_prompt | self.llm | StrOutputParser()
+            # Generate SQL
+            sql_chain = self.sql_prompt | self.sql_llm | StrOutputParser()
             raw_sql = sql_chain.invoke({"question": query})
             
+            # Clean SQL
             sql = raw_sql.strip()
             if "```" in sql:
                 sql = sql.split("```")[1].replace("sql", "").strip()
             sql = sql.split(";")[0] + ";"
             
+            # Execute query
             try:
                 result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
+                if not result or result == "[]":
+                    yield " Aucun résultat."
+                    return
             except Exception as e:
-                result = f"Erreur: {str(e)}"
+                yield f" ❌ Erreur SQL: {str(e)[:50]}"
+                return
             
-            yield "\n"
+            yield " "
             
-            answer_chain = self.answer_prompt | self.llm | StrOutputParser()
+            # Stream answer with optimized LLM
+            answer_chain = self.answer_prompt | self.answer_llm | StrOutputParser()
             for chunk in answer_chain.stream({"question": query, "result": result}):
                 yield chunk
                 
         except Exception as e:
-            yield f"❌ {str(e)}"
+            yield f" ❌ {str(e)[:50]}"
+
 
 
 
