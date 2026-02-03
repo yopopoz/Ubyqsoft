@@ -56,22 +56,40 @@ class Shipment(Base):
     
     # Goods Info
     sku = Column(String, nullable=True)
-    product_description = Column(String, nullable=True)
-    quantity = Column(Integer, nullable=True)
-    weight_kg = Column(Float, nullable=True)
-    volume_cbm = Column(Float, nullable=True)
+    product_description = Column(String, nullable=True) # Product description (customer)
+    product_description_old = Column(String, nullable=True) # Product description (old)
+    quantity = Column(Integer, nullable=True) # Qty
+    
+    # New Qty fields
+    qty_pre_serie = Column(Integer, nullable=True)
+    qty_its = Column(Integer, nullable=True)
+    qty_foc = Column(Integer, nullable=True)
+    qty_packing_acc = Column(Integer, nullable=True)
+    qty_extra_carton = Column(Integer, nullable=True)
+
+    weight_kg = Column(Float, nullable=True) # Total GW (kg)
+    volume_cbm = Column(Float, nullable=True) # Actual volume cbm
     nb_pallets = Column(Integer, nullable=True)
     nb_cartons = Column(Integer, nullable=True)
     
     # Extras
-    order_number = Column(String, index=True, nullable=True) # Master: Order number
-    supplier = Column(String, nullable=True)
-    incoterm_city = Column(String, nullable=True)
-    loading_place = Column(String, nullable=True) # POL
-    pod = Column(String, nullable=True) # Port of Discharge
+    order_number = Column(String, index=True, nullable=True)
+    batch_number = Column(String, nullable=True) # batch
     
-    mad_date = Column(DateTime(timezone=True), nullable=True) # Date MAD Marchandise
-    its_date = Column(DateTime(timezone=True), nullable=True)
+    supplier = Column(String, nullable=True)
+    supplier_contact = Column(String, nullable=True) # Contact (Supplier)
+    
+    incoterm_city = Column(String, nullable=True) # Selling Incoterm city
+    dc_to_deliver = Column(String, nullable=True) # DC to deliver
+    
+    loading_place = Column(String, nullable=True) # Loading Place
+    pod = Column(String, nullable=True) # POD
+    
+    qc_date = Column(DateTime(timezone=True), nullable=True) # QC
+    
+    mad_date = Column(DateTime(timezone=True), nullable=True) # MAD
+    its_date = Column(DateTime(timezone=True), nullable=True) # DATE ITS
+    delivery_date = Column(DateTime(timezone=True), nullable=True) # Delivery date
     
     vessel = Column(String, nullable=True)
     bl_number = Column(String, nullable=True)
@@ -80,7 +98,24 @@ class Shipment(Base):
     pure_trade_ref = Column(String, nullable=True) # REF PURE TRADE
     
     interlocuteur = Column(String, nullable=True)
+    forwarder_name = Column(String, nullable=True) # Forwarder
+    
     responsable_pure_trade = Column(String, nullable=True)
+    achat_contact = Column(String, nullable=True) # Achat contact
+    
+    # Transport
+    transport_mode = Column(String, nullable=True) # MODE
+    eto = Column(String, nullable=True) # ETO
+    hs_code = Column(String, nullable=True)
+    freight_rate = Column(Float, nullable=True) # Taux fret
+    
+    # Comments / Status
+    comments_forwarder = Column(String, nullable=True)
+    comments_internal = Column(Text, nullable=True) # Commentaires
+    
+    departure_stat = Column(String, nullable=True) # Départ
+    found_stat = Column(String, nullable=True) # Trouvé
+    shipment_ref_external = Column(String, nullable=True) # Shipment N°
     
 
     

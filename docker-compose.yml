@@ -25,8 +25,19 @@ services:
       JWT_ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       FRONTEND_URL: http://localhost:3000
+      OLLAMA_BASE_URL: http://ollama:11434
     depends_on:
       - postgres
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: logistics_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
 
 volumes:
   postgres_data:
+  ollama_data:

@@ -86,13 +86,34 @@ Sur le serveur :
 ```bash
 cd /opt/bbox-l
 
-# Créer un dossier pour nginx si non existant (si transfert incomplet)
-mkdir -p nginx && nano nginx/nginx.conf
-# (Collez le contenu de nginx.conf si nécessaire)
-
-# Lancer la production
+# Lancer les conteneurs (Backend + Frontend + Base de données)
+# Note : Nginx n'est plus géré par Docker dans cette configuration
 docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+## 3b. Configuration de Nginx (Sur le serveur)
+Puisque vous utilisez le Nginx installé sur la machine hôte :
+
+1.  **Copier la configuration** :
+    ```bash
+    # Copier le fichier de site vers la configuration Nginx
+    cp nginx/nginx-site.conf /etc/nginx/sites-available/bbox-l
+    ```
+
+2.  **Activer le site** :
+    ```bash
+    # Créer un lien symbolique
+    ln -s /etc/nginx/sites-available/bbox-l /etc/nginx/sites-enabled/
+    
+    # (Optionnel) Désactiver le site par défaut si nécessaire
+    rm /etc/nginx/sites-enabled/default
+    ```
+
+3.  **Vérifier et Redémarrer Nginx** :
+    ```bash
+    nginx -t
+    systemctl reload nginx
+    ```
 
 ## 4. Configuration (Optionnel mais recommandé)
 Pour changer les mots de passe ou secrets, créez un fichier `.env` sur le serveur dans `/opt/bbox-l` :
@@ -105,13 +126,13 @@ JWT_SECRET=super_secret_jwt_key
 FRONTEND_URL=http://votre_domaine.com
 ```
 
-Puis relancez :
+Puis relancez les conteneurs :
 ```bash
 docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## 5. Accès
-L'application devrait être accessible sur `http://votre_ip_serveur`.
+L'application est maintenant servie par votre Nginx local qui redirige vers les conteneurs Docker.
 - Frontend : `http://votre_ip_serveur`
 - API : `http://votre_ip_serveur/api/health`
 

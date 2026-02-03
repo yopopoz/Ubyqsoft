@@ -18,14 +18,29 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app # Useful for hotfix but preferably remove for pure prod immutability
+    ports:
+      - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-logistics}
       JWT_SECRET: ${JWT_SECRET:-changethisforproduction}
       JWT_ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      OLLAMA_BASE_URL: http://ollama:11434
     depends_on:
       - postgres
+      - ollama
+    networks:
+      - app_network
+    restart: always
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: logistics_ollama_prod
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data_prod:/root/.ollama
     networks:
       - app_network
     restart: always
@@ -33,29 +48,17 @@ services:
   frontend:
     build: ./frontend
     container_name: logistics_frontend_prod
+    ports:
+      - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: /api
     networks:
       - app_network
     restart: always
 
-  nginx:
-    image: nginx:alpine
-    container_name: logistics_nginx_prod
-    ports:
-      - "80:80"
-      #- "443:443" # Uncomment if setting up SSL directly here
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - app_network
-    restart: always
-
 volumes:
   postgres_data_prod:
+  ollama_data_prod:
 
 
 networks:

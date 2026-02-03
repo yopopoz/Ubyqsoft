@@ -52,53 +52,11 @@ def seed_database(db: Session):
         
         db.commit()
         
-        # Create 10 demo shipments
-        for i in range(1, 11):
-            ref = f"DEMO{str(i).zfill(3)}"
-            
-            # Random dates
-            created = datetime.now() - timedelta(days=random.randint(10, 60))
-            etd = created + timedelta(days=random.randint(5, 15))
-            eta = etd + timedelta(days=random.randint(20, 40))
-            
-            # Random progress
-            progress = random.randint(1, len(EVENT_TYPES))
-            
-            shipment = Shipment(
-                reference=ref,
-                customer=random.choice(CUSTOMERS),
-                origin=random.choice(ORIGINS),
-                destination=random.choice(DESTINATIONS),
-                sku=random.choice(SKUS),
-                incoterm=random.choice(INCOTERMS),
-                quantity=random.randint(100, 5000),
-                weight_kg=random.randint(500, 20000),
-                volume_cbm=round(random.uniform(5, 50), 2),
-                planned_etd=etd,
-                planned_eta=eta,
-                status=EVENT_TYPES[progress - 1],
-                container_number=f"CONT{random.randint(100000, 999999)}" if progress > 3 else None,
-                seal_number=f"SEAL{random.randint(10000, 99999)}" if progress > 2 else None,
-                created_at=created
-            )
-            db.add(shipment)
-            db.flush()
-            
-            # Create events
-            event_time = created
-            for j in range(progress):
-                event_time = event_time + timedelta(hours=random.randint(12, 72))
-                event = Event(
-                    shipment_id=shipment.id,
-                    type=EVENT_TYPES[j],
-                    timestamp=event_time,
-                    note=f"Auto-generated event for {ref}"
-                    # critical field removed as it does not exist in the model
-                )
-                db.add(event)
+        # Demo shipments generation removed per user request
+        # for i in range(1, 11): ...
         
         db.commit()
-        print("✅ Demo data seeded successfully!")
+        print("✅ Demo users check complete (Demo shipments disabled).")
         
     except Exception as e:
         print(f"Error seeding database: {e}")

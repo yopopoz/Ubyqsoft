@@ -41,7 +41,7 @@ def seed():
             destinations = ["Le Havre, FR", "Marseille, FR", "Anvers, BE"]
             incoterms = ["FOB", "FOB", "CIF", "DDP"]
 
-            for i in range(17):
+            for i in range(12):
                 ref = f"PO-{2024001 + i}"
                 etd = datetime.now() - timedelta(days=random.randint(10, 60))
                 eta = etd + timedelta(days=45)

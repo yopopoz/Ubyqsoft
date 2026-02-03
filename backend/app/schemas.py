@@ -56,20 +56,36 @@ class ShipmentBase(BaseModel):
     
     sku: Optional[str] = None
     product_description: Optional[str] = None
+    product_description_old: Optional[str] = None
     quantity: Optional[int] = None
+    
+    qty_pre_serie: Optional[int] = None
+    qty_its: Optional[int] = None
+    qty_foc: Optional[int] = None
+    qty_packing_acc: Optional[int] = None
+    qty_extra_carton: Optional[int] = None
+
     weight_kg: Optional[float] = None
     volume_cbm: Optional[float] = None
     nb_pallets: Optional[int] = None
     nb_cartons: Optional[int] = None
 
     order_number: Optional[str] = None
+    batch_number: Optional[str] = None
+    
     supplier: Optional[str] = None
+    supplier_contact: Optional[str] = None
+    
     incoterm_city: Optional[str] = None
+    dc_to_deliver: Optional[str] = None
+    
     loading_place: Optional[str] = None
     pod: Optional[str] = None
 
     mad_date: Optional[datetime] = None
     its_date: Optional[datetime] = None
+    qc_date: Optional[datetime] = None
+    delivery_date: Optional[datetime] = None
 
     vessel: Optional[str] = None
     bl_number: Optional[str] = None
@@ -78,7 +94,22 @@ class ShipmentBase(BaseModel):
     pure_trade_ref: Optional[str] = None
 
     interlocuteur: Optional[str] = None
+    forwarder_name: Optional[str] = None
+    
     responsable_pure_trade: Optional[str] = None
+    achat_contact: Optional[str] = None
+    
+    transport_mode: Optional[str] = None
+    eto: Optional[str] = None
+    hs_code: Optional[str] = None
+    freight_rate: Optional[float] = None
+    
+    comments_forwarder: Optional[str] = None
+    comments_internal: Optional[str] = None
+    
+    departure_stat: Optional[str] = None
+    found_stat: Optional[str] = None
+    shipment_ref_external: Optional[str] = None
 
 class ShipmentCreate(ShipmentBase):
     pass
