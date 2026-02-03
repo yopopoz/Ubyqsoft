@@ -6,28 +6,74 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from ...database import engine as db_engine
 
-# SQL prompt with examples to prevent hallucination
-SQL_PROMPT = """Table shipments colonnes EXACTES: id, reference, order_number, batch_number, sku, customer, status, origin, destination, planned_etd, planned_eta, container_number, vessel, quantity, created_at.
+# Comprehensive SQL prompt with synonyms and diverse examples
+SQL_PROMPT = """Tu es un expert SQL pour une base logistique. Génère UNIQUEMENT du SQL PostgreSQL valide.
 
-Exemples:
-Q: expeditions du mois
-SQL: SELECT reference, status, planned_eta FROM shipments WHERE created_at >= CURRENT_DATE - INTERVAL '30 days' LIMIT 5;
+=== COLONNES DISPONIBLES (table: shipments) ===
+id, reference, order_number, batch_number, sku, customer, status, origin, destination, 
+planned_etd, planned_eta, container_number, vessel, quantity, supplier, forwarder_name, created_at
 
-Q: lot 1
-SQL: SELECT reference, batch_number, status FROM shipments WHERE batch_number ILIKE '%1%' LIMIT 5;
+=== DICTIONNAIRE SYNONYMES → COLONNE ===
+lot/batch/numéro de lot → batch_number
+commande/PO/order/numéro commande → reference OU order_number  
+produit/article/SKU/référence produit → sku
+statut/état/situation → status
+client/customer → customer
+fournisseur/supplier → supplier
+origine/départ/from → origin
+destination/arrivée/to → destination
+date départ/ETD/départ prévu → planned_etd
+date arrivée/ETA/arrivée prévue → planned_eta
+conteneur/container → container_number
+navire/bateau/vessel → vessel
+quantité/qty/nombre → quantity
+transitaire/forwarder → forwarder_name
 
-Q: statut commande X
-SQL: SELECT reference, status, planned_eta FROM shipments WHERE reference ILIKE '%X%' LIMIT 5;
+=== EXEMPLES ===
+Q: expéditions du mois / envois récents / shipments this month
+SQL: SELECT reference, status, customer, planned_eta FROM shipments WHERE created_at >= CURRENT_DATE - INTERVAL '30 days' LIMIT 10;
+
+Q: lot 1 / batch 1 / numéro de lot 1
+SQL: SELECT reference, batch_number, status, customer FROM shipments WHERE batch_number ILIKE '%1%' LIMIT 5;
+
+Q: statut commande ABC / état de ABC / où en est ABC
+SQL: SELECT reference, status, planned_eta, destination FROM shipments WHERE reference ILIKE '%ABC%' OR order_number ILIKE '%ABC%' LIMIT 5;
+
+Q: combien d'expéditions / nombre total / count
+SQL: SELECT COUNT(*) as total FROM shipments;
+
+Q: expéditions en transit / en cours / in progress
+SQL: SELECT reference, status, vessel, planned_eta FROM shipments WHERE status ILIKE '%TRANSIT%' OR status ILIKE '%PROGRESS%' LIMIT 10;
+
+Q: client X / expéditions pour X / commandes client X  
+SQL: SELECT reference, status, planned_eta FROM shipments WHERE customer ILIKE '%X%' LIMIT 10;
+
+Q: conteneur ABCD / container ABCD
+SQL: SELECT reference, container_number, status, vessel FROM shipments WHERE container_number ILIKE '%ABCD%' LIMIT 5;
+
+Q: produit SKU123 / article SKU123
+SQL: SELECT reference, sku, quantity, status FROM shipments WHERE sku ILIKE '%SKU123%' LIMIT 10;
+
+Q: arrivées prévues / ETA cette semaine
+SQL: SELECT reference, planned_eta, status, destination FROM shipments WHERE planned_eta >= CURRENT_DATE AND planned_eta <= CURRENT_DATE + INTERVAL '7 days' ORDER BY planned_eta LIMIT 10;
+
+Q: retards / en retard / delayed
+SQL: SELECT reference, status, planned_eta FROM shipments WHERE planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' LIMIT 10;
+
+=== RÈGLES ===
+1. Utilise TOUJOURS ILIKE pour les recherches texte (insensible à la casse)
+2. LIMIT 10 par défaut sauf si COUNT demandé
+3. N'invente JAMAIS de colonnes - utilise UNIQUEMENT celles listées ci-dessus
 
 Question: {question}
 SQL:"""
 
-# Shorter synthesis prompt - STRICT: no hallucination
-ANSWER_PROMPT = """RÈGLE: Réponds UNIQUEMENT avec les données ci-dessous. N'invente rien.
+# Strict answer prompt
+ANSWER_PROMPT = """Réponds en français, bref et factuel. Base-toi UNIQUEMENT sur les données.
 Question: {question}
 Données: {result}
-Si données vides: "Aucun résultat trouvé."
-Réponse (1-2 phrases max):"""
+Si vide ou erreur: "Aucun résultat trouvé pour cette recherche."
+Réponse:"""
 
 class ChatbotEngine:
     def __init__(self, db, user):
@@ -35,13 +81,12 @@ class ChatbotEngine:
         self.db = SQLDatabase(db_engine, include_tables=["shipments"])
         
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
-        # Use faster model with optimized settings
+        # Use llama3 for better understanding (accepts slower for accuracy)
         self.llm = Ollama(
             base_url=ollama_url,
-            model="qwen2:1.5b",  # Much faster than llama3
+            model="llama3",
             temperature=0,
-            num_predict=150,  # Limit response length
-            num_ctx=1024,  # Smaller context window
+            num_predict=200,
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
@@ -49,7 +94,7 @@ class ChatbotEngine:
 
     def process_stream(self, query: str):
         try:
-            yield "🔍 Recherche...\n"
+            yield "🔍 Analyse...\n"
             
             # Generate SQL
             sql_chain = self.sql_prompt | self.llm | StrOutputParser()
@@ -62,10 +107,11 @@ class ChatbotEngine:
             sql = sql.split(";")[0] + ";"
             
             # Execute
+            yield "💾 Recherche...\n"
             try:
                 result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
-            except:
-                result = "Aucun résultat"
+            except Exception as e:
+                result = f"Erreur: {str(e)}"
             
             yield "\n"
             
@@ -76,5 +122,6 @@ class ChatbotEngine:
                 
         except Exception as e:
             yield f"❌ Erreur: {str(e)}"
+
 
 
