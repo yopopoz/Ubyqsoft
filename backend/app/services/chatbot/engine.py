@@ -354,17 +354,13 @@ class ChatbotEngine:
         
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
         
-        # Single ultra-fast LLM for SQL only
+        # Single fast LLM for SQL only
         self.llm = Ollama(
             base_url=ollama_url,
-            model="qwen2:1.5b",  # 5x smaller than mistral
+            model="mistral",  # Already installed
             temperature=0,
-            num_predict=80,      # SQL is very short
-            num_ctx=4096,        # Need context for templates
-            top_k=5,             # Very focused
-            top_p=0.3,           # Deterministic
-            mirostat=2,          # Fast adaptive sampling
-            mirostat_tau=3.0,
+            num_predict=100,
+            num_ctx=4096,
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
