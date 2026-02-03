@@ -38,15 +38,16 @@ class ChatbotEngine:
         """
         try:
             # --- Phase 1: Analysis & Translation ---
-            # Create a chain that converts the user question into a SQL query
+            yield "🔍 Analyse en cours...\n"
             write_query = create_sql_query_chain(self.llm, self.db)
+            sql_query = write_query.invoke({"question": query})
             
             # --- Phase 2: Execution ---
-            # Tool to execute the generated query
+            yield "💾 Recherche des données...\n"
             execute_query = QuerySQLDataBaseTool(db=self.db)
+            sql_result = execute_query.invoke(sql_query)
             
             # --- Phase 3: Synthesis ---
-            # defined strictly to base the answer ONLY on the context (SQL results)
             answer_prompt = PromptTemplate.from_template(
                 """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
                 
@@ -57,21 +58,16 @@ class ChatbotEngine:
                 Answer (in French, strictly based on the SQL Result):"""
             )
 
-            # Build the full chain
-            chain = (
-                RunnablePassthrough.assign(query=write_query).assign(
-                    result=itemgetter("query") | execute_query
-                )
-                | answer_prompt
-                | self.llm
-                | StrOutputParser()
-            )
-
-            # Invoke the chain using stream
-            for chunk in chain.stream({"question": query}):
+            chain = answer_prompt | self.llm | StrOutputParser()
+            
+            for chunk in chain.stream({
+                "question": query,
+                "query": sql_query,
+                "result": sql_result
+            }):
                 yield chunk
             
         except Exception as e:
             # Fallback for errors
             print(f"Chatbot Error: {str(e)}")
-            yield f"Désolé, je ne peux pas traiter votre demande pour le moment. Erreur technique: {str(e)}"
+            yield f"\nDésolé, une erreur est survenue: {str(e)}"
