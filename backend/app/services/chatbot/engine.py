@@ -357,7 +357,7 @@ class ChatbotEngine:
         # Single fast LLM for SQL only
         self.llm = Ollama(
             base_url=ollama_url,
-            model="mistral",  # Already installed
+            model="llama3",  # Try llama3
             temperature=0,
             num_predict=100,
             num_ctx=4096,
