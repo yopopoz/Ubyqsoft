@@ -13,7 +13,8 @@ export default function Chatbot() {
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+    // Force relative path to ensure we go through Nginx proxy and avoid localhost issues
+    const API_BASE = "/api";
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
