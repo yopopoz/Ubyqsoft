@@ -31,6 +31,9 @@ class EventBase(BaseModel):
     note: Optional[str] = None
     critical: bool = False
     timestamp: Optional[datetime] = None
+    
+    source: str = "MANUAL"
+    external_id: Optional[str] = None
 
 class EventCreate(EventBase):
     shipment_id: int
@@ -111,6 +114,12 @@ class ShipmentBase(BaseModel):
     found_stat: Optional[str] = None
     shipment_ref_external: Optional[str] = None
 
+    # API Sync Fields
+    carrier_scac: Optional[str] = None
+    last_sync_at: Optional[datetime] = None
+    sync_status: Optional[str] = "IDLE"
+    next_poll_at: Optional[datetime] = None
+
 class ShipmentCreate(ShipmentBase):
     pass
 
@@ -121,3 +130,57 @@ class Shipment(ShipmentBase):
     events: List[Event] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# --- Excel Import ---
+from enum import Enum
+
+class ImportMode(str, Enum):
+    CREATE_ONLY = "create_only"
+    UPDATE_OR_CREATE = "update_or_create"
+
+
+class ImportPreviewRow(BaseModel):
+    row_number: int
+    reference: Optional[str] = None
+    customer: Optional[str] = None
+    order_number: Optional[str] = None
+    planned_etd: Optional[datetime] = None
+    status: str  # "new", "update", "error"
+    error: Optional[str] = None
+
+
+class ImportPreviewResult(BaseModel):
+    rows: List[ImportPreviewRow]
+    columns_found: List[str]
+    total_rows: int
+    new_count: int
+    update_count: int
+    error_count: int
+
+
+class ImportResultError(BaseModel):
+    row: int
+    reference: Optional[str] = None
+    error: str
+
+
+class ImportResult(BaseModel):
+    created: int
+    updated: int
+    skipped: int
+
+# --- OneDrive Sync ---
+class OneDriveFile(BaseModel):
+    id: str
+    name: str
+    path: str
+    lastModified: str
+
+class SyncConfig(BaseModel):
+    file_id: str
+    file_name: str
+
+class SyncResult(ImportResult):
+    pass
+

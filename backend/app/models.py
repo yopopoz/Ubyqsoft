@@ -129,6 +129,12 @@ class Shipment(Base):
     status = Column(String, default="ORDER_INFO") # Stores last EventType
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
+    # API Sync Fields
+    carrier_scac = Column(String, nullable=True, index=True) # SCAC Code (e.g. CMDU, MAEU)
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    sync_status = Column(String, default="IDLE") # IDLE, SYNCING, ERROR
+    next_poll_at = Column(DateTime(timezone=True), nullable=True) # Respect Retry-After
+
     events = relationship("Event", back_populates="shipment", cascade="all, delete-orphan", order_by="desc(Event.timestamp)")
 
 class Event(Base):
@@ -140,6 +146,11 @@ class Event(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     payload = Column(JSON, nullable=True)
     note = Column(Text, nullable=True)
+    
+    # Event Provenance
+    source = Column(String, default="MANUAL") # MANUAL, API_CMA, API_MAERSK, etc.
+    external_id = Column(String, nullable=True, index=True) # External Event ID for dedup
+
     shipment = relationship("Shipment", back_populates="events")
 
 class Alert(Base):
@@ -203,6 +214,23 @@ class SystemSetting(Base):
     value = Column(Text, nullable=True)
     is_encrypted = Column(Boolean, default=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class ApiLog(Base):
+    """
+    Log des appels API pour le debugging et la sécurité (Quietude).
+    """
+    __tablename__ = "api_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider = Column(String, index=True) # e.g. "CMA_CGM", "MAERSK", "VESSELFINDER"
+    endpoint = Column(String)
+    method = Column(String) # GET, POST
+    status_code = Column(Integer)
+    request_payload = Column(Text, nullable=True) # Redacted if necessary
+    response_body = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+    duration_ms = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # Update Shipment Relationships
 Shipment.alerts = relationship("Alert", back_populates="shipment")

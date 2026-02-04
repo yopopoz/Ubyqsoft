@@ -34,3 +34,30 @@ def start_scheduler():
     scheduler.add_job(check_sla_violations, 'interval', minutes=1)
     scheduler.start()
     print("Scheduler started...")
+    
+    # Renewal job (Check daily)
+    scheduler.add_job(renew_onedrive_subscription, 'interval', days=1)
+
+def renew_onedrive_subscription():
+    """
+    Check if we have an active subscription closer to expiry and renew it.
+    """
+    db = SessionLocal()
+    try:
+        from .services.onedrive_client import OneDriveClient
+        from .models import SystemSetting
+        import json
+        
+        sub_id = db.query(SystemSetting).filter(SystemSetting.key == "ONEDRIVE_SUBSCRIPTION_ID").first()
+        if sub_id and sub_id.value:
+            real_id = json.loads(sub_id.value)
+            client = OneDriveClient(db)
+            # Just blindly renew daily is safe enough (expires in 3 days)
+            print(f"Renewing subscription {real_id}...")
+            client.renew_subscription(real_id)
+            print("Subscription renewed.")
+    except Exception as e:
+        print(f"Failed to renew subscription: {e}")
+    finally:
+        db.close()
+

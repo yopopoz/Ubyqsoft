@@ -213,6 +213,9 @@ export default function CloudSettings() {
                     )}
                 </div>
 
+                {/* OneDrive Sync Configuration */}
+                {isConnected && <OneDriveSyncConfig token={token} />}
+
                 <div className="mt-8 border-t border-slate-100 pt-6">
                     <h4 className="text-sm font-semibold text-slate-800 mb-4">Permissions requises</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -231,3 +234,222 @@ export default function CloudSettings() {
         </div>
     );
 }
+
+function OneDriveSyncConfig({ token }: { token: string | null }) {
+    const [isRealtime, setIsRealtime] = useState(false);
+    const [subInfo, setSubInfo] = useState<{ id: string, expirationDateTime: string } | null>(null);
+
+    useEffect(() => {
+        loadConfig();
+        loadSubscription();
+    }, []);
+
+    const loadSubscription = async () => {
+        try {
+            const data = await apiFetch<any>('/sync/onedrive/subscription', { token });
+            if (data && data.id) {
+                setIsRealtime(true);
+                setSubInfo(data);
+            } else {
+                setIsRealtime(false);
+                setSubInfo(null);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const toggleRealtime = async () => {
+        const newState = !isRealtime;
+        try {
+            await apiFetch(`/sync/onedrive/subscribe?enable=${newState}`, {
+                method: 'POST',
+                token
+            });
+            setIsRealtime(newState);
+            loadSubscription();
+            if (newState) alert("Mode temps réel activé !");
+            else alert("Mode temps réel désactivé.");
+        } catch (e) {
+            alert("Erreur lors du changement de mode");
+        }
+    };
+
+    const loadConfig = async () => {
+        try {
+            const data = await apiFetch<any>('/sync/onedrive/config', { token });
+            setConfig(data);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const loadFiles = async () => {
+        setIsLoadingFiles(true);
+        try {
+            const data = await apiFetch<any[]>('/sync/onedrive/files', { token });
+            setFiles(data);
+            setIsSelecting(true);
+        } catch (e) {
+            alert("Erreur chargement fichiers OneDrive");
+        } finally {
+            setIsLoadingFiles(false);
+        }
+    };
+
+    const selectFile = async (file: any) => {
+        try {
+            await apiFetch('/sync/onedrive/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_id: file.id, file_name: file.name }),
+                token
+            });
+            setConfig({ ...config, file_id: file.id, file_name: file.name });
+            setIsSelecting(false);
+            alert("Fichier maître configuré !");
+        } catch (e) {
+            alert("Erreur sauvegarde config");
+        }
+    };
+
+    const runSync = async () => {
+        setIsSyncing(true);
+        try {
+            const res = await apiFetch<any>('/sync/onedrive/run', {
+                method: 'POST',
+                token
+            });
+            alert(`Synchro terminée !\nCréés: ${res.created}\nMis à jour: ${res.updated}\nIgnorés: ${res.skipped}\nErreurs: ${res.errors.length}`);
+            loadConfig(); // Reload last_run
+        } catch (e) {
+            alert("Erreur lors de la synchronisation");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    return (
+        <div className="mt-8 pt-6 border-t border-slate-100">
+            <h4 className="text-lg font-semibold text-slate-800 mb-4">Synchronisation OneDrive</h4>
+
+            {config.file_id ? (
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500">Fichier Maître</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                <span className="font-semibold text-slate-800">{config.file_name}</span>
+                            </div>
+                            {config.last_run && (
+                                <p className="text-xs text-slate-400 mt-2">
+                                    Dernière synchro : {new Date(config.last_run).toLocaleString()}
+                                </p>
+                            )}
+
+                            {/* Realtime Toggle */}
+                            <div className="mt-4 flex items-center gap-3">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={isRealtime} onChange={toggleRealtime} />
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span className="ml-3 text-sm font-medium text-slate-700">Mode Temps Réel</span>
+                                </label>
+                                {isRealtime && subInfo?.expirationDateTime && (
+                                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
+                                        Actif (Expire: {new Date(subInfo.expirationDateTime).toLocaleDateString()})
+                                    </span>
+                                )}
+                            </div>
+
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={loadFiles}
+                                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
+                                title="Changer de fichier"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={runSync}
+                                disabled={isSyncing}
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                            >
+                                {isSyncing ? (
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                )}
+                                Synchroniser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center p-8 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                    <div className="inline-flex p-3 rounded-full bg-slate-100 mb-4">
+                        <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                    </div>
+                    <h5 className="text-sm font-medium text-slate-900">Aucun fichier configuré</h5>
+                    <p className="text-sm text-slate-500 mb-4">Sélectionnez un fichier Excel sur votre OneDrive pour activer la synchronisation.</p>
+                    <button
+                        onClick={loadFiles}
+                        disabled={isLoadingFiles}
+                        className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors inlin-flex items-center gap-2"
+                    >
+                        {isLoadingFiles ? "Chargement..." : "Sélectionner un fichier"}
+                    </button>
+                </div>
+            )}
+
+            {/* File Selector Modal / List */}
+            {isSelecting && (
+                <div className="mt-4 border rounded-lg overflow-hidden border-slate-200 animate-fadeIn">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                        <span className="font-medium text-sm text-slate-700">Fichiers Excel récents</span>
+                        <button onClick={() => setIsSelecting(false)} className="text-slate-400 hover:text-slate-600">×</button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                        {files.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-slate-500">Aucun fichier .xlsx trouvé</div>
+                        ) : (
+                            files.map((f) => (
+                                <div
+                                    key={f.id}
+                                    onClick={() => selectFile(f)}
+                                    className="p-3 hover:bg-blue-50 cursor-pointer flex items-center justify-between border-b border-slate-100 last:border-0"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        </svg>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-800">{f.name}</p>
+                                            <p className="text-xs text-slate-500">{f.path}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-slate-400">
+                                        {new Date(f.lastModified).toLocaleDateString()}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
