@@ -26,10 +26,9 @@ services:
       JWT_ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       FRONTEND_URL: ${FRONTEND_URL:-https://puretrack.cloud}
-      OLLAMA_BASE_URL: http://ollama:11434
+      GROQ_API_KEY: ${GROQ_API_KEY}
     depends_on:
       - postgres
-      - ollama
     networks:
       - app_network
     restart: always
