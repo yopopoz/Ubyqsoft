@@ -554,7 +554,7 @@ class ChatbotEngine:
         
         self.llm = ChatGroq(
             api_key=groq_api_key,
-            model="mixtral-8x7b-32768",  # 32K context, handles large prompts
+            model="meta-llama/llama-4-scout-17b-16e-instruct",  # 30K context
             temperature=0,
             max_tokens=250,
         )
