@@ -543,6 +543,39 @@ Question: {question}
 Données: {result}
 Réponse:"""
 
+# Simple in-memory cache for responses (TTL 5 minutes)
+import hashlib
+import time
+from functools import lru_cache
+
+_response_cache = {}
+_cache_ttl = 300  # 5 minutes
+
+def _get_cache_key(query: str) -> str:
+    """Generate cache key from normalized query"""
+    normalized = query.lower().strip()
+    return hashlib.md5(normalized.encode()).hexdigest()
+
+def _get_cached_response(query: str):
+    """Get cached response if valid"""
+    key = _get_cache_key(query)
+    if key in _response_cache:
+        cached_time, response = _response_cache[key]
+        if time.time() - cached_time < _cache_ttl:
+            return response
+        del _response_cache[key]
+    return None
+
+def _set_cached_response(query: str, response: str):
+    """Cache a response"""
+    key = _get_cache_key(query)
+    _response_cache[key] = (time.time(), response)
+    # Limit cache size to 100 entries
+    if len(_response_cache) > 100:
+        oldest_key = min(_response_cache.keys(), key=lambda k: _response_cache[k][0])
+        del _response_cache[oldest_key]
+
+
 class ChatbotEngine:
     def __init__(self, db, user):
         self.user = user
@@ -564,7 +597,14 @@ class ChatbotEngine:
 
     def process_stream(self, query: str):
         try:
-            yield "🔍 "
+            # Check cache first
+            cached = _get_cached_response(query)
+            if cached:
+                yield "⚡ "  # Lightning = cached response
+                yield cached
+                return
+            
+            yield "🔍 Analyse... "
             
             # Generate SQL
             sql_chain = self.sql_prompt | self.llm | StrOutputParser()
@@ -576,16 +616,24 @@ class ChatbotEngine:
                 sql = sql.split("```")[1].replace("sql", "").strip()
             sql = sql.split(";")[0] + ";"
             
+            # Show SQL being executed (streaming feedback)
+            yield f"\n📊 Requête: `{sql[:80]}{'...' if len(sql) > 80 else ''}`\n\n"
+            
             # Execute SQL
             try:
                 result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
             except Exception as e:
                 result = f"Erreur SQL: {str(e)}"
             
-            # Generate answer
+            # Generate answer with streaming
+            full_response = ""
             answer_chain = self.answer_prompt | self.llm | StrOutputParser()
             for chunk in answer_chain.stream({"question": query, "result": result}):
                 yield chunk
+                full_response += chunk
+            
+            # Cache the full response (without the SQL display part)
+            _set_cached_response(query, full_response)
                 
         except Exception as e:
             yield f"❌ Erreur: {str(e)}"
