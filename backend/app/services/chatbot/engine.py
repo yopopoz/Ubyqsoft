@@ -33,17 +33,75 @@ Types: BL, INVOICE, PACKING_LIST, QC_REPORT, CUSTOMS_DEC
 CARRIER_SCHEDULES (horaires transporteurs):
 id, carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name, voyage_ref
 
-=== SYNONYMES IMPORTANTS ===
-lot/numéro de lot → batch_number
-commande/PO/référence → reference
-aléa/risque/problème → alerts
-jalon/étape/événement → events
-qualité/QC → qc_date ou documents type='QC_REPORT'
-retard → planned_eta < CURRENT_DATE
-schedule/horaire → carrier_schedules
-transitaire/forwarder → forwarder_name
-MAD/mise à disposition → mad_date
-ITS/date instruction → its_date
+=== DICTIONNAIRE DE SYNONYMES COMPLET ===
+
+TERMES DE RECHERCHE:
+- "où est", "position", "suivi", "tracking", "localisation", "statut", "status", "état", "state", "point sur", "update on", "news", "info sur" → rechercher dans shipments
+- "commande", "order", "PO", "bon de commande", "purchase order", "ref", "référence", "reference" → chercher dans reference
+- "lot", "numéro lot", "batch", "batch number", "lot number", "n° lot" → chercher dans batch_number
+- "article", "produit", "sku", "item", "product" → chercher dans sku
+- "client", "customer", "acheteur", "buyer" → chercher dans customer
+- "fournisseur", "supplier", "vendor", "source" → chercher dans supplier
+
+DATES:
+- "ETD", "date départ", "départ usine", "quand ça part", "departure", "ship date", "date expédition", "date envoi" → planned_etd
+- "ETA", "date arrivée", "arrivée prévue", "quand ça arrive", "arrival", "delivery date prévue", "livraison prévue" → planned_eta
+- "livraison", "delivery", "date livraison", "delivered", "réception" → delivery_date
+- "MAD", "mise à disposition", "disponibilité", "mise à dispo", "available date" → mad_date
+- "ITS", "instruction", "date instruction", "instructions to ship" → its_date
+- "QC", "qualité", "quality", "contrôle qualité", "quality check", "inspection" → qc_date
+
+TRANSPORT:
+- "conteneur", "container", "boîte", "box", "ctr", "cntr" → container_number
+- "navire", "vessel", "bateau", "ship", "boat", "cargo" → vessel
+- "maritime", "sea", "mer", "ocean", "boat", "bateau" → transport_mode ILIKE '%SEA%'
+- "aérien", "air", "avion", "flight", "plane", "cargo aérien" → transport_mode ILIKE '%AIR%'
+- "routier", "road", "camion", "truck", "terrestre" → transport_mode ILIKE '%ROAD%'
+- "transitaire", "forwarder", "freight forwarder", "commissionnaire" → forwarder_name
+- "scellé", "seal", "plomb" → seal_number
+
+PROBLÈMES:
+- "retard", "retards", "late", "delayed", "en retard", "overdue" → planned_eta < CURRENT_DATE
+- "urgent", "rush", "prioritaire", "priority", "express", "hot" → rush_status = true
+- "aléa", "aléas", "risque", "risques", "problème", "issue", "alert", "alerte", "incident" → alerts
+- "météo", "weather", "tempête", "storm", "typhon", "ouragan" → alerts WHERE type = 'WEATHER'
+- "grève", "strike", "mouvement social" → alerts WHERE type = 'STRIKE'
+- "congestion", "port congestion", "engorgement", "embouteillage" → alerts WHERE type = 'PORT_CONGESTION'
+- "douane", "customs", "dédouanement", "clearance" → alerts WHERE type = 'CUSTOMS'
+
+TRAÇABILITÉ:
+- "jalon", "jalons", "étape", "étapes", "milestone", "milestones", "event", "events", "historique", "timeline", "suivi" → events
+- "tracking", "trace", "traçabilité", "tracing" → events
+- "GPS", "position GPS", "localisation temps réel", "real-time position" → events WHERE type = 'GPS_POSITION'
+
+DOCUMENTS:
+- "doc", "docs", "document", "documents", "papiers", "paperwork", "files" → documents
+- "BL", "bill of lading", "connaissement", "B/L" → documents WHERE type = 'BL'
+- "facture", "invoice", "factures", "invoices" → documents WHERE type = 'INVOICE'
+- "packing list", "liste colisage", "packing", "colisage" → documents WHERE type = 'PACKING_LIST'
+- "rapport QC", "QC report", "rapport qualité", "quality report", "inspection report" → documents WHERE type = 'QC_REPORT'
+- "déclaration douane", "customs declaration", "DAU" → documents WHERE type = 'CUSTOMS_DEC'
+
+INCOTERMS:
+- "DDP", "rendu droits acquittés", "delivered duty paid" → incoterm = 'DDP'
+- "FOB", "free on board", "franco à bord" → incoterm = 'FOB'
+- "EXW", "ex works", "départ usine" → incoterm = 'EXW'
+- "CIF", "cost insurance freight" → incoterm = 'CIF'
+- "CFR", "cost and freight" → incoterm = 'CFR'
+
+SCHEDULES:
+- "schedule", "schedules", "horaire", "horaires", "planning", "programme" → carrier_schedules
+- "prochain départ", "next departure", "prochaine rotation" → carrier_schedules WHERE etd >= CURRENT_DATE
+- "transit time", "temps transit", "durée transit" → transit_time_days
+
+STATISTIQUES:
+- "stats", "statistiques", "statistics", "chiffres", "numbers", "kpi", "indicateurs" → GROUP BY + COUNT
+- "combien", "how many", "nombre de", "total", "count" → COUNT(*)
+- "répartition", "breakdown", "distribution", "ventilation" → GROUP BY
+
+CONFORMITÉ:
+- "conforme", "compliant", "compliance", "conformité" → compliance_status
+- "non conforme", "non-compliant", "rejected", "rejeté" → compliance_status contient 'NON' ou 'REJECT'
 
 === RÈGLES SQL ===
 - Pour chercher X: WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%'
