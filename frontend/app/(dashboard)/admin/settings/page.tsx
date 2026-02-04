@@ -6,9 +6,11 @@ import WebhookSettings from "@/components/settings/WebhookSettings";
 import AISettings from "@/components/settings/AISettings";
 import EmailSettings from "@/components/settings/EmailSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
+import LogisticsSettings from "@/components/settings/LogisticsSettings";
 
 const TABS = [
     { id: 'cloud', label: 'Cloud & Intégrations', icon: '☁️' },
+    { id: 'logistics', label: 'Logistique & APIs', icon: '🚢' },
     { id: 'ai', label: 'Intelligence Artificielle', icon: '✨' },
     { id: 'webhooks', label: 'Webhooks', icon: '🔗' },
     { id: 'email', label: 'Email & SMTP', icon: '📧' },
@@ -25,6 +27,7 @@ export default function AdminSettingsPage() {
                     <CloudSettings />
                 </Suspense>
             );
+            case 'logistics': return <LogisticsSettings />;
             case 'ai': return <AISettings />;
             case 'webhooks': return <WebhookSettings />;
             case 'email': return <EmailSettings />;
