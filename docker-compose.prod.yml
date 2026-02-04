@@ -33,17 +33,6 @@ services:
       - app_network
     restart: always
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: logistics_ollama_prod
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data_prod:/root/.ollama
-    networks:
-      - app_network
-    restart: always
-
   frontend:
     build: ./frontend
     container_name: logistics_frontend_prod
@@ -57,7 +46,6 @@ services:
 
 volumes:
   postgres_data_prod:
-  ollama_data_prod:
 
 
 networks:
