@@ -600,11 +600,8 @@ class ChatbotEngine:
             # Check cache first
             cached = _get_cached_response(query)
             if cached:
-                yield "⚡ "  # Lightning = cached response
                 yield cached
                 return
-            
-            yield "🔍 Analyse... "
             
             # Generate SQL
             sql_chain = self.sql_prompt | self.llm | StrOutputParser()
@@ -615,9 +612,6 @@ class ChatbotEngine:
             if "```" in sql:
                 sql = sql.split("```")[1].replace("sql", "").strip()
             sql = sql.split(";")[0] + ";"
-            
-            # Show SQL being executed (streaming feedback)
-            yield f"\n📊 Requête: `{sql[:80]}{'...' if len(sql) > 80 else ''}`\n\n"
             
             # Execute SQL
             try:
@@ -632,8 +626,8 @@ class ChatbotEngine:
                 yield chunk
                 full_response += chunk
             
-            # Cache the full response (without the SQL display part)
+            # Cache the full response
             _set_cached_response(query, full_response)
                 
         except Exception as e:
-            yield f"❌ Erreur: {str(e)}"
+            yield f"Erreur: {str(e)}"
