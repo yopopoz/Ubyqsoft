@@ -594,6 +594,58 @@ class ChatbotEngine:
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
         self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
+    
+    def _validate_sql(self, sql: str) -> tuple[bool, str]:
+        """Validate SQL syntax using sqlparse"""
+        import sqlparse
+        try:
+            parsed = sqlparse.parse(sql)
+            if not parsed or not parsed[0].tokens:
+                return False, "SQL vide ou invalide"
+            
+            # Check it's a SELECT statement (security)
+            first_token = str(parsed[0].tokens[0]).upper().strip()
+            if first_token not in ('SELECT', 'WITH'):
+                return False, "Seules les requêtes SELECT sont autorisées"
+            
+            # Check for dangerous keywords
+            sql_upper = sql.upper()
+            dangerous = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'TRUNCATE', 'ALTER', 'CREATE']
+            for keyword in dangerous:
+                if keyword in sql_upper:
+                    return False, f"Mot-clé interdit: {keyword}"
+            
+            return True, ""
+        except Exception as e:
+            return False, str(e)
+    
+    def _clean_sql(self, raw_sql: str) -> str:
+        """Clean and extract SQL from LLM response"""
+        sql = raw_sql.strip()
+        if "```" in sql:
+            parts = sql.split("```")
+            if len(parts) >= 2:
+                sql = parts[1].replace("sql", "").strip()
+        sql = sql.split(";")[0] + ";"
+        return sql
+    
+    def _generate_sql(self, query: str, error_context: str = None) -> str:
+        """Generate SQL, with optional error context for retry"""
+        if error_context:
+            # Fallback: add error context to help LLM fix the query
+            retry_prompt = f"""La requête précédente a échoué avec l'erreur: {error_context}
+Corrige la requête SQL pour la question suivante.
+
+Question: {query}
+SQL corrigé:"""
+            from langchain_core.prompts import PromptTemplate
+            retry_template = PromptTemplate.from_template(SQL_PROMPT.replace("Q: {question}\nSQL:", retry_prompt))
+            sql_chain = retry_template | self.llm | StrOutputParser()
+        else:
+            sql_chain = self.sql_prompt | self.llm | StrOutputParser()
+        
+        raw_sql = sql_chain.invoke({"question": query})
+        return self._clean_sql(raw_sql)
 
     def process_stream(self, query: str):
         try:
@@ -603,21 +655,39 @@ class ChatbotEngine:
                 yield cached
                 return
             
-            # Generate SQL
-            sql_chain = self.sql_prompt | self.llm | StrOutputParser()
-            raw_sql = sql_chain.invoke({"question": query})
+            # Generate SQL (first attempt)
+            sql = self._generate_sql(query)
             
-            # Clean SQL
-            sql = raw_sql.strip()
-            if "```" in sql:
-                sql = sql.split("```")[1].replace("sql", "").strip()
-            sql = sql.split(";")[0] + ";"
+            # Validate SQL
+            is_valid, validation_error = self._validate_sql(sql)
+            if not is_valid:
+                # Fallback: retry with error context
+                sql = self._generate_sql(query, error_context=validation_error)
+                is_valid, validation_error = self._validate_sql(sql)
+                if not is_valid:
+                    yield f"Impossible de générer une requête valide: {validation_error}"
+                    return
             
-            # Execute SQL
-            try:
-                result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
-            except Exception as e:
-                result = f"Erreur SQL: {str(e)}"
+            # Execute SQL with fallback
+            max_retries = 2
+            result = None
+            last_error = None
+            
+            for attempt in range(max_retries):
+                try:
+                    result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
+                    break  # Success
+                except Exception as e:
+                    last_error = str(e)
+                    if attempt < max_retries - 1:
+                        # Retry with error context
+                        sql = self._generate_sql(query, error_context=last_error)
+                        is_valid, _ = self._validate_sql(sql)
+                        if not is_valid:
+                            break
+            
+            if result is None:
+                result = f"Erreur après {max_retries} tentatives: {last_error}"
             
             # Generate answer with streaming
             full_response = ""
@@ -626,8 +696,10 @@ class ChatbotEngine:
                 yield chunk
                 full_response += chunk
             
-            # Cache the full response
-            _set_cached_response(query, full_response)
+            # Cache the full response (only if successful)
+            if "Erreur" not in result:
+                _set_cached_response(query, full_response)
                 
         except Exception as e:
             yield f"Erreur: {str(e)}"
+
