@@ -606,14 +606,16 @@ SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_
 Q: {question}
 SQL:"""
 
-ANSWER_PROMPT = """Tu es un assistant logistique expert. Réponds en français de manière utile et contextuelle.
+ANSWER_PROMPT = """Tu es un assistant logistique expert. Réponds en français de manière précise et contextuelle.
 Base-toi UNIQUEMENT sur les données fournies par la requête SQL.
 
 ANALYSE DU RÉSULTAT "Données":
 1. Si le résultat est VIDE ("[]" ou "None") :
-   - Si la question porte sur des retards/alertes/problèmes : Réponds "Bonne nouvelle : aucune alerte ou retard à signaler pour le moment."
-   - Si la question cherche une info spécifique (ex: MAD, ETA, Navire, Date) : Réponds "Cette information n'est pas encore renseignée dans le système."
-   - Si la question est une recherche de commande/lot/référence : Réponds "Je ne trouve aucune expédition correspondant à cette référence dans la base de données."
+   - Question technique (Logs, API, Erreurs système) : Réponds "Rien à signaler : aucune erreur technique n'a été relevée dans les logs récents."
+   - Question sur des aléas spécifiques (Météo, Grèves, Douane) : Réponds "Aucun aléa de ce type n'est actif pour le moment."
+   - Question sur les retards : Réponds "Bonne nouvelle : aucun retard détecté sur les expéditions en cours."
+   - Question sur une information manquante (MAD, ETA, Navire) : Réponds "Cette donnée spécifique n'est pas encore renseignée dans le système."
+   - Recherche spécifique introuvable (Commande, Lot) : Réponds "Je ne trouve aucune expédition correspondante. Vérifiez la référence."
 
 2. Si le résultat contient des données :
    - Résume les informations de manière factuelle.
