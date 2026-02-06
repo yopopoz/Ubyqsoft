@@ -660,9 +660,9 @@ class ChatbotEngine:
         
         self.llm = ChatGroq(
             api_key=groq_api_key,
-            model="meta-llama/llama-4-scout-17b-16e-instruct",  # 30K context
+            model="llama3-70b-8192",  # Stable model
             temperature=0,
-            max_tokens=250,
+            max_tokens=500,
         )
         
         self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
@@ -671,6 +671,7 @@ class ChatbotEngine:
     def _validate_sql(self, sql: str) -> tuple[bool, str]:
         """Validate SQL syntax using sqlparse"""
         import sqlparse
+        import re
         try:
             parsed = sqlparse.parse(sql)
             if not parsed or not parsed[0].tokens:
@@ -681,11 +682,14 @@ class ChatbotEngine:
             if first_token not in ('SELECT', 'WITH'):
                 return False, "Seules les requêtes SELECT sont autorisées"
             
-            # Check for dangerous keywords
+            # Check for dangerous keywords using Regex (whole word only)
+            # This prevents False Positives like "created_at" triggering "CREATE"
             sql_upper = sql.upper()
             dangerous = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'TRUNCATE', 'ALTER', 'CREATE']
+            
             for keyword in dangerous:
-                if keyword in sql_upper:
+                # \b matches word boundary
+                if re.search(r'\b' + keyword + r'\b', sql_upper):
                     return False, f"Mot-clé interdit: {keyword}"
             
             return True, ""
