@@ -15,11 +15,12 @@ SQL_PROMPT = """Tu es un expert SQL PostgreSQL pour une application de suivi log
 === TABLES DISPONIBLES ===
 
 SHIPMENTS (expéditions - table principale):
-id, reference, batch_number, order_number, sku, customer, status, origin, destination, planned_etd, planned_eta, container_number, seal_number, vessel, quantity, weight_kg, volume_cbm, supplier, forwarder_name, qc_date, mad_date, its_date, delivery_date, transport_mode, compliance_status, rush_status, incoterm, comments_internal, created_at
+id, reference, batch_number, order_number, sku, customer, status, origin, destination, planned_etd, planned_eta, container_number, seal_number, vessel, quantity, weight_kg, volume_cbm, supplier, forwarder_name, qc_date, mad_date, its_date, delivery_date, transport_mode, compliance_status, rush_status, incoterm, comments_internal, created_at, carrier_scac, last_sync_at, sync_status, next_poll_at
 
 EVENTS (jalons/étapes):
-id, shipment_id, type, timestamp, note
+id, shipment_id, type, timestamp, note, source, external_id
 Types: ORDER_INFO, PRODUCTION_READY, LOADING_IN_PROGRESS, TRANSIT_OCEAN, ARRIVAL_PORT, IMPORT_CLEARANCE, FINAL_DELIVERY, GPS_POSITION, CUSTOMS_STATUS
+Sources: MANUAL, API_CMA, API_MAERSK, API_VESSELFINDER
 
 ALERTS (aléas/risques):
 id, type, severity, message, impact_days, category, shipment_id, linked_route, active, created_at
@@ -32,6 +33,10 @@ Types: BL, INVOICE, PACKING_LIST, QC_REPORT, CUSTOMS_DEC
 
 CARRIER_SCHEDULES (horaires transporteurs):
 id, carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name, voyage_ref
+
+API_LOGS (logs des appels API transporteurs):
+id, provider, endpoint, method, status_code, request_payload, response_body, error_message, duration_ms, created_at
+Providers: CMA_CGM, MAERSK, VESSELFINDER, etc.
 
 === DICTIONNAIRE DE SYNONYMES COMPLET ===
 
@@ -528,6 +533,74 @@ SQL: SELECT origin, destination, COUNT(*) as nb FROM shipments GROUP BY origin, 
 Q: lead time moyen / average lead time
 SQL: SELECT AVG(planned_eta - planned_etd) as lead_time_moyen, transport_mode FROM shipments WHERE planned_etd IS NOT NULL AND planned_eta IS NOT NULL GROUP BY transport_mode;
 
+=== TEMPLATES - REQUÊTES COMBINÉES AVANCÉES ===
+
+Q: où se trouve X actuellement / position + dernier jalon X
+SQL: SELECT s.reference, s.status, s.vessel, s.destination, s.container_number, s.planned_eta, e.type as dernier_jalon, e.timestamp as date_jalon FROM shipments s LEFT JOIN events e ON e.shipment_id = s.id WHERE (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') ORDER BY e.timestamp DESC LIMIT 1;
+
+Q: statut détaillé X avec mode transport / statut complet X
+SQL: SELECT s.reference, s.status, s.transport_mode, s.vessel, s.container_number, s.origin, s.destination, s.planned_etd, s.planned_eta, s.qc_date, s.compliance_status FROM shipments s WHERE s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%' LIMIT 5;
+
+Q: dans les délais pour campagne / ma campagne X / commandes pour période X
+SQL: SELECT reference, status, planned_eta, customer, rush_status FROM shipments WHERE planned_eta BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 AND status NOT ILIKE '%DELIVER%' ORDER BY planned_eta LIMIT 20;
+
+Q: retards sur mes articles en transit / mes commandes en retard en transit
+SQL: SELECT reference, status, vessel, planned_eta, CURRENT_DATE - planned_eta as jours_retard, destination FROM shipments WHERE status ILIKE '%TRANSIT%' AND planned_eta < CURRENT_DATE ORDER BY jours_retard DESC LIMIT 15;
+
+Q: ETA recalculée congestion / impact congestion sur ETA
+SQL: SELECT s.reference, s.planned_eta, a.message, a.impact_days, s.planned_eta + a.impact_days as eta_ajustee FROM shipments s JOIN alerts a ON a.linked_route ILIKE '%' || s.destination || '%' WHERE a.type = 'PORT_CONGESTION' AND a.active = true AND s.status ILIKE '%TRANSIT%' LIMIT 10;
+
+Q: aléas météo fret maritime / impact météo maritime
+SQL: SELECT a.type, a.severity, a.message, a.impact_days, a.linked_route FROM alerts a WHERE a.type = 'WEATHER' AND a.active = true AND a.linked_route ILIKE '%SEA%' ORDER BY a.severity DESC LIMIT 10;
+
+Q: aléas aérien / impact capacité aérien / annulations aériennes
+SQL: SELECT a.type, a.severity, a.message, a.impact_days, a.linked_route FROM alerts a WHERE a.active = true AND (a.linked_route ILIKE '%AIR%' OR a.message ILIKE '%aérien%' OR a.message ILIKE '%cargo%') ORDER BY a.severity DESC LIMIT 10;
+
+Q: QC validé tous articles X / contrôle qualité complet X
+SQL: SELECT reference, batch_number, qc_date, compliance_status, status, quantity FROM shipments WHERE (reference ILIKE '%X%' OR customer ILIKE '%X%') AND qc_date IS NOT NULL ORDER BY qc_date DESC LIMIT 15;
+
+Q: rapport qualité fichiers X / documents QC X
+SQL: SELECT d.filename, d.status, d.uploaded_at, s.reference, s.compliance_status FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'QC_REPORT' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') ORDER BY d.uploaded_at DESC LIMIT 10;
+
+Q: date livraison précise X / créneau livraison X
+SQL: SELECT reference, planned_eta, delivery_date, destination, mad_date, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
+
+Q: impact aléa fournisseur X / risque fournisseur X
+SQL: SELECT s.reference, s.supplier, s.status, s.planned_eta, a.type, a.message FROM shipments s LEFT JOIN alerts a ON a.shipment_id = s.id WHERE s.supplier ILIKE '%X%' AND (a.active = true OR a.id IS NULL) ORDER BY a.severity DESC NULLS LAST LIMIT 15;
+
+Q: AWB X / numéro tracking X / suivi transporteur X
+SQL: SELECT reference, container_number, vessel, forwarder_name, transport_mode, planned_eta, status FROM shipments WHERE container_number ILIKE '%X%' OR reference ILIKE '%X%' OR forwarder_name ILIKE '%X%' LIMIT 10;
+
+Q: taux respect délais / ponctualité historique / OTD rate
+SQL: SELECT COUNT(*) as total, SUM(CASE WHEN delivery_date IS NOT NULL AND delivery_date <= planned_eta THEN 1 ELSE 0 END) as a_lheure, ROUND(100.0 * SUM(CASE WHEN delivery_date IS NOT NULL AND delivery_date <= planned_eta THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as taux_ponctualite FROM shipments WHERE delivery_date IS NOT NULL;
+
+Q: options aériennes urgentes / switch air maritime / alternatives aériennes
+SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days FROM carrier_schedules WHERE mode = 'AIR' AND etd >= CURRENT_DATE ORDER BY etd, transit_time_days LIMIT 10;
+
+Q: coûts douaniers / taxes import / frais douane
+SQL: SELECT reference, incoterm, destination, status, compliance_status FROM shipments WHERE incoterm IN ('DDP', 'CIF') AND status ILIKE '%CUSTOMS%' OR status ILIKE '%CLEAR%' LIMIT 10;
+
+Q: grèves terminaux / aléas humains / fermeture terminaux
+SQL: SELECT type, severity, message, impact_days, linked_route FROM alerts WHERE type = 'STRIKE' AND active = true ORDER BY severity DESC, created_at DESC LIMIT 10;
+
+Q: aléas réglementaires / nouvelles taxes / réglementations import
+SQL: SELECT type, severity, message, impact_days, category FROM alerts WHERE (type = 'CUSTOMS' OR message ILIKE '%tax%' OR message ILIKE '%réglement%') AND active = true LIMIT 10;
+
+Q: plan contingence / routes alternatives X / multimodal backup
+SQL: SELECT carrier, pol, pod, mode, etd, eta, transit_time_days FROM carrier_schedules WHERE (pol ILIKE '%X%' OR pod ILIKE '%X%') AND etd >= CURRENT_DATE ORDER BY transit_time_days LIMIT 15;
+
+Q: aléas calendaires CNY / Golden Week / impact fêtes
+SQL: SELECT type, message, impact_days, linked_route FROM alerts WHERE (message ILIKE '%CNY%' OR message ILIKE '%Chinese%' OR message ILIKE '%Golden%' OR message ILIKE '%fête%' OR message ILIKE '%holiday%') AND active = true LIMIT 10;
+
+Q: commandes synchronisation API / sync status / statut synchronisation
+SQL: SELECT reference, carrier_scac, sync_status, last_sync_at, next_poll_at FROM shipments WHERE carrier_scac IS NOT NULL ORDER BY last_sync_at DESC NULLS LAST LIMIT 15;
+
+Q: événements API X / events source API
+SQL: SELECT e.type, e.timestamp, e.source, e.external_id, s.reference FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.source != 'MANUAL' ORDER BY e.timestamp DESC LIMIT 20;
+
+Q: erreurs API récentes / logs API erreurs / problèmes synchronisation
+SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_logs WHERE status_code >= 400 OR error_message IS NOT NULL ORDER BY created_at DESC LIMIT 20;
+
 === FIN DES TEMPLATES ===
 
 Q: {question}
@@ -579,7 +652,7 @@ def _set_cached_response(query: str, response: str):
 class ChatbotEngine:
     def __init__(self, db, user):
         self.user = user
-        self.db = SQLDatabase(db_engine, include_tables=["shipments", "events", "alerts", "documents", "carrier_schedules"])
+        self.db = SQLDatabase(db_engine, include_tables=["shipments", "events", "alerts", "documents", "carrier_schedules", "api_logs"])
         
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
