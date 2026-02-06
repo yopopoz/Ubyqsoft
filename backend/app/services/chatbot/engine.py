@@ -670,7 +670,7 @@ class ChatbotEngine:
         
         self.llm = ChatGroq(
             api_key=groq_api_key,
-            model="llama-3.3-70b-versatile",  # Updated to supported model
+            model="meta-llama/llama-4-scout-17b-16e-instruct",  # 500K TPD limit (vs 100K for Llama3-70b)
             temperature=0,
             max_tokens=500,
         )
