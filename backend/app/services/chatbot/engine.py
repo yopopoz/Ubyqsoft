@@ -668,7 +668,7 @@ class ChatbotEngine:
         
         self.llm = ChatGroq(
             api_key=groq_api_key,
-            model="llama3-70b-8192",  # Stable model
+            model="llama-3.3-70b-versatile",  # Updated to supported model
             temperature=0,
             max_tokens=500,
         )
