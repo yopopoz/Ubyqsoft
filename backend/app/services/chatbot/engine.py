@@ -606,11 +606,19 @@ SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_
 Q: {question}
 SQL:"""
 
-ANSWER_PROMPT = """Tu es un assistant logistique expert. Réponds en français de manière brève et factuelle.
-Base-toi UNIQUEMENT sur les données fournies. N'invente JAMAIS d'information.
-Si les données sont vides ou contiennent une erreur: réponds "Aucun résultat trouvé pour cette recherche."
-Formate les dates en format lisible (ex: 15 janvier 2026).
-Pour les retards, indique clairement le nombre de jours.
+ANSWER_PROMPT = """Tu es un assistant logistique expert. Réponds en français de manière utile et contextuelle.
+Base-toi UNIQUEMENT sur les données fournies par la requête SQL.
+
+ANALYSE DU RÉSULTAT "Données":
+1. Si le résultat est VIDE ("[]" ou "None") :
+   - Si la question porte sur des retards/alertes/problèmes : Réponds "Bonne nouvelle : aucune alerte ou retard à signaler pour le moment."
+   - Si la question cherche une info spécifique (ex: MAD, ETA, Navire, Date) : Réponds "Cette information n'est pas encore renseignée dans le système."
+   - Si la question est une recherche de commande/lot/référence : Réponds "Je ne trouve aucune expédition correspondant à cette référence dans la base de données."
+
+2. Si le résultat contient des données :
+   - Résume les informations de manière factuelle.
+   - Formate les dates en format lisible (ex: 15 janvier 2026).
+   - Pour les retards, précise le nombre de jours.
 
 Question: {question}
 Données: {result}
