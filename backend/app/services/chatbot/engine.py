@@ -704,6 +704,7 @@ class ChatbotEngine:
     
     def _generate_sql(self, query: str, error_context: str = None) -> str:
         """Generate SQL, with optional error context for retry"""
+        print(f"DEBUG: Generating SQL for query: {query} (context: {error_context})", flush=True)
         if error_context:
             # Fallback: add error context to help LLM fix the query
             retry_prompt = f"""La requête précédente a échoué avec l'erreur: {error_context}
@@ -717,29 +718,43 @@ SQL corrigé:"""
         else:
             sql_chain = self.sql_prompt | self.llm | StrOutputParser()
         
-        raw_sql = sql_chain.invoke({"question": query})
-        return self._clean_sql(raw_sql)
+        try:
+            raw_sql = sql_chain.invoke({"question": query})
+            print(f"DEBUG: Raw SQL generated: {raw_sql}", flush=True)
+            return self._clean_sql(raw_sql)
+        except Exception as e:
+            print(f"DEBUG: Error in _generate_sql invoke: {e}", flush=True)
+            raise e
 
     def process_stream(self, query: str):
+        print(f"DEBUG: Starting process_stream for query: {query}", flush=True)
         try:
             # Check cache first
             cached = _get_cached_response(query)
             if cached:
+                print("DEBUG: Returning cached response", flush=True)
                 yield cached
                 return
             
             # Generate SQL (first attempt)
+            print("DEBUG: Attempting to generate SQL...", flush=True)
             sql = self._generate_sql(query)
+            print(f"DEBUG: SQL to validate: {sql}", flush=True)
             
             # Validate SQL
             is_valid, validation_error = self._validate_sql(sql)
             if not is_valid:
+                print(f"DEBUG: SQL Invalid: {validation_error}. Retrying...", flush=True)
                 # Fallback: retry with error context
                 sql = self._generate_sql(query, error_context=validation_error)
                 is_valid, validation_error = self._validate_sql(sql)
                 if not is_valid:
-                    yield f"Impossible de générer une requête valide: {validation_error}"
+                    msg = f"Impossible de générer une requête valide: {validation_error}"
+                    print(f"DEBUG: Failure: {msg}", flush=True)
+                    yield msg
                     return
+            
+            print(f"DEBUG: SQL Validated. Executing: {sql}", flush=True)
             
             # Execute SQL with fallback
             max_retries = 2
@@ -749,9 +764,11 @@ SQL corrigé:"""
             for attempt in range(max_retries):
                 try:
                     result = QuerySQLDataBaseTool(db=self.db).invoke(sql)
+                    print(f"DEBUG: SQL Execution Result (Attempt {attempt+1}): {str(result)[:200]}...", flush=True)
                     break  # Success
                 except Exception as e:
                     last_error = str(e)
+                    print(f"DEBUG: SQL Exec Error (Attempt {attempt+1}): {last_error}", flush=True)
                     if attempt < max_retries - 1:
                         # Retry with error context
                         sql = self._generate_sql(query, error_context=last_error)
@@ -760,19 +777,30 @@ SQL corrigé:"""
                             break
             
             if result is None:
-                result = f"Erreur après {max_retries} tentatives: {last_error}"
+                msg = f"Erreur après {max_retries} tentatives: {last_error}"
+                print(f"DEBUG: Final Failure: {msg}", flush=True)
+                result = msg
             
             # Generate answer with streaming
+            print("DEBUG: Generating answer stream...", flush=True)
             full_response = ""
-            answer_chain = self.answer_prompt | self.llm | StrOutputParser()
-            for chunk in answer_chain.stream({"question": query, "result": result}):
-                yield chunk
-                full_response += chunk
+            try:
+                answer_chain = self.answer_prompt | self.llm | StrOutputParser()
+                for chunk in answer_chain.stream({"question": query, "result": result}):
+                    # print(f"DEBUG: Chunk: {chunk}", flush=True) # Too verbose?
+                    yield chunk
+                    full_response += chunk
+                print(f"DEBUG: Stream complete. Full response length: {len(full_response)}", flush=True)
+            except Exception as e:
+                 print(f"DEBUG: Error during answer streaming: {e}", flush=True)
+                 yield f"Erreur de génération de réponse: {e}"
             
             # Cache the full response (only if successful)
-            if "Erreur" not in result:
+            if "Erreur" not in str(result) and full_response:
                 _set_cached_response(query, full_response)
                 
         except Exception as e:
+            print(f"DEBUG: Global process_stream exception: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
             yield f"Erreur: {str(e)}"
-

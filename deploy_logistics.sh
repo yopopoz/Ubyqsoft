@@ -9,8 +9,15 @@ git pull origin main
 
 # 2. Rebuild/Restart Backend & Frontend
 # We need to restart to make sure new python code is loaded and frontend is rebuilt with new pages.
-echo "🔄 Rebuilding and restarting containers..."
-docker-compose -f docker-compose.prod.yml up -d --build backend frontend
+# Check for docker-compose or docker compose
+if command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    COMPOSE_CMD="docker compose"
+fi
+
+echo "🔄 Rebuilding and restarting containers (using $COMPOSE_CMD)..."
+$COMPOSE_CMD -f docker-compose.prod.yml up -d --build backend frontend
 
 # Wait a few seconds for DB connection to be ready if it was restarting
 echo "⏳ Waiting 5s for service stabilization..."
