@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/services/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,35 +19,37 @@ export default function CloudSettings() {
     const [showConfig, setShowConfig] = useState(false);
 
     useEffect(() => {
+        const checkStatus = async () => {
+            if (!token) return;
+            try {
+                const data = await apiFetch<Record<string, any>>('/settings/', { token });
+                if (data['MS_ACCESS_TOKEN']) {
+                    setIsConnected(true);
+                }
+                setConfig({
+                    clientId: data['MS_CLIENT_ID'] || "",
+                    clientSecret: data['MS_CLIENT_SECRET'] || "",
+                    tenantId: data['MS_TENANT_ID'] || "common"
+                });
+
+                // Show config if no keys
+                if (!data['MS_CLIENT_ID']) {
+                    setShowConfig(true);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
         if (token) checkStatus();
         if (searchParams.get('success') === 'true') {
             setIsConnected(true);
             // Clear params
             router.replace('/admin/settings?tab=cloud');
         }
-    }, [token]);
+    }, [token, searchParams, router]);
 
-    const checkStatus = async () => {
-        if (!token) return;
-        try {
-            const data = await apiFetch<any>('/settings/', { token });
-            if (data['MS_ACCESS_TOKEN']) {
-                setIsConnected(true);
-            }
-            setConfig({
-                clientId: data['MS_CLIENT_ID'] || "",
-                clientSecret: data['MS_CLIENT_SECRET'] || "",
-                tenantId: data['MS_TENANT_ID'] || "common"
-            });
-
-            // Show config if no keys
-            if (!data['MS_CLIENT_ID']) {
-                setShowConfig(true);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+    // checkStatus definition removed (moved inside useEffect)
 
     const saveConfig = async () => {
         try {
@@ -238,18 +240,27 @@ export default function CloudSettings() {
 function OneDriveSyncConfig({ token }: { token: string | null }) {
     const [isRealtime, setIsRealtime] = useState(false);
     const [subInfo, setSubInfo] = useState<{ id: string, expirationDateTime: string } | null>(null);
+    const [config, setConfig] = useState<Record<string, any>>({});
+    const [files, setFiles] = useState<any[]>([]);
+    const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+    const [isSelecting, setIsSelecting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
-    useEffect(() => {
-        loadConfig();
-        loadSubscription();
-    }, []);
-
-    const loadSubscription = async () => {
+    const loadConfig = useCallback(async () => {
         try {
-            const data = await apiFetch<any>('/sync/onedrive/subscription', { token });
+            const data = await apiFetch<Record<string, any>>('/sync/onedrive/config', { token });
+            setConfig(data);
+        } catch (e) {
+            console.error(e);
+        }
+    }, [token]);
+
+    const loadSubscription = useCallback(async () => {
+        try {
+            const data = await apiFetch<Record<string, any>>('/sync/onedrive/subscription', { token });
             if (data && data.id) {
                 setIsRealtime(true);
-                setSubInfo(data);
+                setSubInfo(data as any);
             } else {
                 setIsRealtime(false);
                 setSubInfo(null);
@@ -257,7 +268,14 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
         } catch (e) {
             console.error(e);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadConfig();
+        loadSubscription();
+    }, [loadConfig, loadSubscription]);
+
+    // loadSubscription removal (handled above)
 
     const toggleRealtime = async () => {
         const newState = !isRealtime;
@@ -275,14 +293,7 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
         }
     };
 
-    const loadConfig = async () => {
-        try {
-            const data = await apiFetch<any>('/sync/onedrive/config', { token });
-            setConfig(data);
-        } catch (e) {
-            console.error(e);
-        }
-    };
+    // loadConfig removal (handled above)
 
     const loadFiles = async () => {
         setIsLoadingFiles(true);

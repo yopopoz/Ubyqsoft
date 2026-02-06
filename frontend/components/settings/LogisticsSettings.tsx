@@ -17,26 +17,28 @@ export default function LogisticsSettings() {
     });
 
     useEffect(() => {
-        if (token) loadConfig();
+        const loadConfig = async () => {
+            if (!token) return;
+            try {
+                const data = await apiFetch<Record<string, string>>('/settings/', { token });
+                setConfig({
+                    cmaClientId: data['CMA_CLIENT_ID'] || "",
+                    cmaClientSecret: data['CMA_CLIENT_SECRET'] || "",
+                    maerskClientId: data['MAERSK_CLIENT_ID'] || "",
+                    maerskClientSecret: data['MAERSK_CLIENT_SECRET'] || "",
+                    vesselFinderKey: data['VESSELFINDER_KEY'] || "",
+                    usitcToken: data['USITC_TOKEN'] || ""
+                });
+            } catch (e) {
+                console.error("Failed to load logistics settings", e);
+            }
+        };
+
+        loadConfig();
     }, [token]);
 
-    const loadConfig = async () => {
-        try {
-            const data = await apiFetch<any>('/settings/', { token });
-            setConfig({
-                cmaClientId: data['CMA_CLIENT_ID'] || "",
-                cmaClientSecret: data['CMA_CLIENT_SECRET'] || "",
-                maerskClientId: data['MAERSK_CLIENT_ID'] || "",
-                maerskClientSecret: data['MAERSK_CLIENT_SECRET'] || "",
-                vesselFinderKey: data['VESSELFINDER_KEY'] || "",
-                usitcToken: data['USITC_TOKEN'] || ""
-            });
-        } catch (e) {
-            console.error("Failed to load logistics settings", e);
-        }
-    };
-
     const saveConfig = async () => {
+        if (!token) return;
         setIsLoading(true);
         try {
             await apiFetch('/settings/', {
