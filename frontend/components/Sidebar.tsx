@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { Link, usePathname } from "@/navigation";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { navigation } from "@/config/navigation";
+import { useTranslations } from "next-intl";
 
 interface SidebarProps {
     onClose?: () => void;
@@ -13,6 +13,7 @@ interface SidebarProps {
 export default function Sidebar({ onClose }: SidebarProps) {
     const pathname = usePathname();
     const { canWrite, isAdmin, user, logout } = useAuth();
+    const t = useTranslations('Navigation');
 
     const visibleNav = navigation.filter((item) => {
         if (item.requiresAdmin) return isAdmin;
@@ -23,11 +24,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
     const getRoleBadge = (role: string) => {
         switch (role) {
             case "admin":
-                return { bg: "bg-black", text: "text-white", label: "Admin" }; // High contrast for admin
+                return { bg: "bg-black", text: "text-white", label: t('role_admin') }; // High contrast for admin
             case "ops":
-                return { bg: "bg-zinc-200", text: "text-black", label: "Opérateur" }; // Subtle for ops
+                return { bg: "bg-zinc-200", text: "text-black", label: t('role_ops') }; // Subtle for ops
             default:
-                return { bg: "bg-zinc-100", text: "text-zinc-500", label: "Client" };
+                return { bg: "bg-zinc-100", text: "text-zinc-500", label: t('role_client') };
         }
     };
 
@@ -51,7 +52,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
             {/* Navigation */}
             <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
                 <p className="px-4 py-2 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                    Menu
+                    {t('menu')}
                 </p>
                 {visibleNav.map((item) => {
                     const isActive = pathname === item.href ||
@@ -66,7 +67,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             <span className={`transition-colors duration-200 ${isActive ? "text-black" : "text-zinc-400 group-hover:text-black"}`}>
                                 {item.icon}
                             </span>
-                            <span className="font-medium text-sm tracking-wide">{item.name}</span>
+                            <span className="font-medium text-sm tracking-wide">{t(item.translationKey)}</span>
                         </Link>
                     );
                 })}
@@ -80,7 +81,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-black truncate">
-                            {user?.sub?.split("@")[0] || "Utilisateur"}
+                            {user?.sub?.split("@")[0] || t('user_fallback')}
                         </p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${roleBadge.bg} ${roleBadge.text}`}>
                             {roleBadge.label}
@@ -89,7 +90,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     <button
                         onClick={logout}
                         className="p-2 rounded-lg text-zinc-400 hover:text-black hover:bg-white transition-all shadow-sm flex-shrink-0"
-                        title="Déconnexion"
+                        title={t('logout_title')}
                     >
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

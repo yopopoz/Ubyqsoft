@@ -1,0 +1,426 @@
+{
+    "Dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome back"
+    },
+    "Login": {
+        "title": "Client Area",
+        "prompt": "Sign in to your Pure Track account",
+        "emailLabel": "Professional Email",
+        "emailPlaceholder": "name@pure-trade.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "••••••••",
+        "submit": "Sign In",
+        "submitLoading": "Signing In...",
+        "errorInvalid": "Invalid credentials",
+        "errorGeneric": "Connection error. Please try again.",
+        "footer": "© 2026 Pure Trade. All rights reserved.",
+        "tagline1": "EXCEPTIONAL PROJECT",
+        "tagline2": "EXCEPTIONAL SOLUTION"
+    },
+    "Navigation": {
+        "dashboard": "Dashboard",
+        "dashboard_short": "Home",
+        "shipments": "Shipments",
+        "shipments_short": "Shipments",
+        "new_shipment": "New Shipment",
+        "new_shipment_short": "New",
+        "reports": "Reports",
+        "reports_short": "Reports",
+        "users": "Users",
+        "users_short": "Admin",
+        "import": "Excel Import",
+        "import_short": "Import",
+        "settings": "Settings",
+        "settings_short": "Settings",
+        "menu": "MENU",
+        "logout_title": "Logout",
+        "role_admin": "Admin",
+        "role_ops": "Operator",
+        "role_client": "Client",
+        "user_fallback": "User"
+    },
+    "Navbar": {
+        "searchPlaceholder": "Search..."
+    },
+    "ShipmentDetails": {
+        "notFound": "Shipment not found",
+        "loading": "Loading...",
+        "createdOn": "Created on {date}",
+        "currentStatus": "Current Status",
+        "updated": "Updated:",
+        "estimatedDelay": "Estimated Delay",
+        "daysLeft": "days left",
+        "lateBy": "Late by {days}d",
+        "delivered": "Delivered",
+        "confirmedDelay": "Confirmed Delay",
+        "delayRisk": "Delay Risk",
+        "healthyStatus": "Healthy Status",
+        "aiPrediction": "AI Predictive Insight",
+        "aiPredictionText": "Given current progress (Phase: {phase}) and expected ETA in less than 5 days, our models predict a risk of delay of <strong>3 to 5 days</strong>.",
+        "viewRecommendations": "View recommendations",
+        "routePlanning": "Route & Planning",
+        "commercialInfo": "Commercial Info",
+        "logistics": "Logistics",
+        "references": "References & Contacts",
+        "documents": "Documents",
+        "activityLog": "Activity Log",
+        "logs": "logs",
+        "viewAll": "View all",
+        "addDocument": "Add document",
+        "pureTradeRef": "Pure Trade Ref.",
+        "forwarderRef": "Forwarder Ref.",
+        "unassigned": "Unassigned",
+        "customer": "Customer",
+        "supplier": "Supplier",
+        "order": "Order (PO)",
+        "sku": "SKU / Product",
+        "quantity": "Quantity",
+        "incoterm": "Incoterm",
+        "place": "Place",
+        "container": "Container",
+        "seal": "Seal",
+        "weight": "Gross Weight",
+        "volume": "Volume",
+        "pallets": "Pallets",
+        "cartons": "Cartons",
+        "transit": "Transit",
+        "mad": "Availability",
+        "its": "In-Transit Scan",
+        "actions": {
+            "email": "Email",
+            "docs": "Docs",
+            "print": "Print",
+            "alert": "Alert"
+        },
+        "attentionRequired": "Attention Required",
+        "timeAgo": {
+            "justNow": "just now",
+            "minutes": "{n}m ago",
+            "hours": "{n}h ago",
+            "days": "{n}d ago"
+        }
+    },
+    "Events": {
+        "categories": {
+            "production_loading": "Production & Loading",
+            "export_transit": "Export & Transit",
+            "arrival_import": "Arrival & Import",
+            "operational": "Operational"
+        },
+        "types": {
+            "PRODUCTION_READY": "Production Ready",
+            "LOADING_IN_PROGRESS": "Loading in Progress",
+            "SEAL_NUMBER_CUTOFF": "Seal Number Cutoff",
+            "EXPORT_CLEARANCE_CAMBODIA": "Export Clearance",
+            "TRANSIT_OCEAN": "Ocean Transit",
+            "CONTAINER_READY_FOR_DEPARTURE": "Container Ready used",
+            "ARRIVAL_PORT_NYNJ": "Arrival at Port",
+            "IMPORT_CLEARANCE_CBP": "Import Clearance",
+            "FINAL_DELIVERY": "Final Delivery",
+            "ORDER_INFO": "Order Info received",
+            "PHOTOS_CONTAINER_WEIGHT": "Photos & Weight",
+            "GPS_POSITION_ETA_ETD": "GPS / ETA / ETD Update",
+            "UNLOADING_GATE_OUT": "Unloading / Gate Out",
+            "CUSTOMS_STATUS_DECLARATION": "Customs Declaration",
+            "UNLOADING_TIME_CHECKS": "Unloading Time Check"
+        }
+    },
+    "AddEventModal": {
+        "button": "+ Add Event",
+        "title": "New Event",
+        "typeLabel": "Event Type",
+        "dateLabel": "Event Date",
+        "specificData": "Specific Data ({category})",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "Add additional information...",
+        "criticalLabel": "Critical Event",
+        "criticalDesc": "Mark this event as requiring immediate attention",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "success": "Event added successfully",
+        "error": "Failed to add event",
+        "fields": {
+            "seal_number": "Seal Number",
+            "container_number": "Container Number",
+            "weight_kg": "Weight (kg)",
+            "photo_url": "Photo URL",
+            "location": "Current Location",
+            "new_eta": "New Estimated ETA",
+            "vessel_name": "Vessel",
+            "voyage_ref": "Voyage Ref"
+        }
+    },
+    "Dashboard": {
+        "title": "Dashboard",
+        "overview": "Overview",
+        "subtitle": "Manage your shipments and track performance.",
+        "loading": "Loading...",
+        "newShipment": "New Shipment",
+        "totalShipments": "Total Shipments",
+        "inTransit": "In Transit",
+        "delivered": "Delivered",
+        "pending": "Pending",
+        "recentShipments": "Recent Shipments",
+        "viewHistory": "View full history"
+    },
+    "Shipments": {
+        "title": "All Shipments"
+    },
+    "ShipmentsTable": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "yesterday": "Yesterday",
+        "inDays": "In {days} days",
+        "daysAgo": "{days} days ago",
+        "errorLoad": "Unable to load shipments.",
+        "loadingData": "Loading data...",
+        "columns": "Columns",
+        "display": "Display",
+        "reference": "Reference",
+        "status": "Status",
+        "route": "Route",
+        "dates": "ETD / ETA",
+        "mad_its": "MAD / ITS",
+        "vessel": "Vessel",
+        "forwarder_ref": "Transitaddy Ref",
+        "incoterm": "Incoterm",
+        "sku": "SKU",
+        "quantity": "Qty",
+        "action": "Action",
+        "view": "View",
+        "noShipments": "No shipments found.",
+        "origin": "Origin",
+        "destination": "Destination",
+        "viewDetails": "View details",
+        "dep": "DEP",
+        "arr": "ARR"
+    },
+    "Import": {
+        "title": "Import Excel",
+        "open": "Open Import",
+        "dragDrop": "Drag and drop your Excel file here",
+        "clickSelect": "or click to select (.xlsx, .xls)",
+        "invalidFormat": "Invalid format. Only .xlsx and .xls files are accepted.",
+        "mode": "Import Mode",
+        "updateOrCreate": "Update or Create",
+        "updateOrCreateDesc": "Updates if exists, creates otherwise (recommended)",
+        "createOnly": "Create Only",
+        "createOnlyDesc": "Ignores existing references",
+        "stats": {
+            "new": "New",
+            "updates": "Updates",
+            "errors": "Errors",
+            "skipped": "Skipped"
+        },
+        "table": {
+            "row": "Row",
+            "reference": "Reference",
+            "customer": "Customer",
+            "order": "Order #",
+            "status": "Status",
+            "showingRows": "Showing first 50 rows of {total}"
+        },
+        "status": {
+            "new": "New",
+            "update": "Update",
+            "error": "Error"
+        },
+        "buttons": {
+            "cancel": "Cancel",
+            "preview": "Preview",
+            "confirm": "Confirm Import",
+            "newImport": "New Import",
+            "close": "Close",
+            "back": "Back",
+            "loading": "Loading..."
+        },
+        "success": {
+            "title": "Import Completed!",
+            "processed": "{count} rows processed"
+        },
+        "errors": {
+            "title": "Detailed Errors",
+            "preview": "Error during preview",
+            "unknown": "Unknown error",
+            "import": "Error during import"
+        }
+    },
+    "Settings": {
+        "title": "Application Settings",
+        "description": "Manage global configurations and system integrations.",
+        "tabs": {
+            "cloud": "Cloud & Integrations",
+            "logistics": "Logistics & APIs",
+            "ai": "Artificial Intelligence",
+            "webhooks": "Webhooks",
+            "email": "Email & SMTP",
+            "security": "Security & API"
+        },
+        "loading": "Loading settings...",
+        "Cloud": {
+            "title": "Microsoft Cloud",
+            "description": "Manage connection with Azure and Office 365 services",
+            "status": {
+                "connected": "Connected",
+                "disconnected": "Disconnected"
+            },
+            "config": {
+                "title": "Azure AD App Configuration",
+                "show": "Show keys",
+                "hide": "Hide",
+                "clientId": "Application (Client) ID",
+                "clientSecret": "Client Secret",
+                "tenantId": "Directory (Tenant) ID"
+            },
+            "connect": "Connect with Microsoft",
+            "connectedAccount": "Connected Account",
+            "activePermissions": "Active permissions",
+            "disconnect": "Disconnect",
+            "confirmDisconnect": "Are you sure you want to disconnect the Microsoft account?",
+            "permissions": "Required Permissions",
+            "readWrite": "Read and Write",
+            "alerts": {
+                "saveError": "Save error",
+                "configRequired": "Please configure Client ID and Secret first.",
+                "connectError": "Error initializing connection",
+                "disconnectError": "Error during disconnection"
+            }
+        },
+        "OneDrive": {
+            "title": "OneDrive Synchronization",
+            "masterFile": "Master File",
+            "lastSync": "Last sync: {date}",
+            "realtime": "Real-time Mode",
+            "active": "Active (Expires: {date})",
+            "changeFile": "Change file",
+            "sync": "Synchronize",
+            "noFile": "No file configured",
+            "selectFileDesc": "Select an Excel file from your OneDrive to enable synchronization.",
+            "selectFileBtn": "Select a file",
+            "recentFiles": "Recent Excel Files",
+            "noFilesFound": "No .xlsx files found",
+            "successSync": "Sync completed!\nCreated: {created}\nUpdated: {updated}\nSkipped: {skipped}\nErrors: {errors}",
+            "alerts": {
+                "realtimeEnabled": "Real-time mode enabled!",
+                "realtimeDisabled": "Real-time mode disabled.",
+                "modeError": "Error changing mode",
+                "loadError": "Error loading OneDrive files",
+                "configSaved": "Master file configured!",
+                "configSaveError": "Error saving config",
+                "syncError": "Error during synchronization"
+            }
+        },
+        "Logistics": {
+            "title": "Logistics & Carrier APIs",
+            "description": "Configure external service access for automatic synchronization.",
+            "cma": {
+                "title": "CMA CGM Group",
+                "clientId": "Client ID",
+                "clientSecret": "Client Secret"
+            },
+            "maersk": {
+                "title": "Maersk",
+                "clientId": "Consumer Key (Client ID)",
+                "clientSecret": "Consumer Secret"
+            },
+            "dataServices": {
+                "title": "Data Services",
+                "vesselFinder": "VesselFinder API Key",
+                "usitc": "USITC DataWeb Token (Login.gov)"
+            },
+            "save": "Save Configurations",
+            "success": "Configuration saved successfully!",
+            "error": "Error while saving"
+        },
+        "AI": {
+            "title": "Artificial Intelligence",
+            "save": "Save All",
+            "saving": "Saving...",
+            "loading": "Loading...",
+            "providers": {
+                "title": "Providers",
+                "gemini": "Gemini",
+                "claude": "Claude",
+                "openai": "ChatGPT"
+            },
+            "fields": {
+                "apiKey": "API Key",
+                "model": "Model"
+            },
+            "prompts": {
+                "chatbot": {
+                    "title": "Chatbot System Prompt",
+                    "description": "Define the personality and base knowledge of your virtual assistant.",
+                    "placeholder": "You are an expert..."
+                },
+                "predictive": {
+                    "title": "Predictive Analysis Prompt",
+                    "description": "Instructions for automatic analysis of shipments and delay risks.",
+                    "placeholder": "Analyze the data..."
+                }
+            },
+            "success": "Configuration saved!",
+            "error": "Error while saving"
+        },
+        "Webhooks": {
+            "title": "Webhooks",
+            "description": "Manage HTTP notifications to your external services",
+            "new": "New Webhook",
+            "table": {
+                "endpoint": "Endpoint URL",
+                "events": "Events",
+                "status": "Status",
+                "actions": "Actions",
+                "never": "Never",
+                "delete": "Delete",
+                "confirmDelete": "Delete this webhook?"
+            }
+        },
+        "Email": {
+            "title": "SMTP Configuration",
+            "server": "SMTP Server",
+            "port": "Port",
+            "security": "Security",
+            "sender": "Sender Email",
+            "password": "App Password",
+            "none": "None",
+            "test": "Test Connection",
+            "save": "Save"
+        },
+        "Security": {
+            "title": "API Keys",
+            "description": "Manage access keys for external applications",
+            "generate": "Generate Key",
+            "created": "Created on {date}",
+            "lastUsed": "Last used: {time}",
+            "revoke": "Revoke"
+        }
+    },
+    "Navigation": {
+        "dashboard": "Dashboard",
+        "shipments": "Shipments",
+        "new_shipment": "New Shipment",
+        "reports": "Reports",
+        "users": "Users",
+        "import": "Import Excel",
+        "settings": "Settings",
+        "role_admin": "Administrator",
+        "role_ops": "Operations",
+        "role_client": "Client",
+        "menu": "MENU",
+        "user_fallback": "User",
+        "logout_title": "Logout"
+    },
+    "Chatbot": {
+        "welcome": "Hello! I am your PURE TRADE logistics assistant. How can I help you today?",
+        "error": "An error occurred while communicating with the server.",
+        "placeholder": "Shipment number or question...",
+        "user": "You",
+        "assistant": "Pure AI",
+        "subtitle": "Logistics & Real-time Tracking",
+        "title": "PURE AI Assistant",
+        "poweredBy": "Powered by PURE TRADE Logistics Intelligence"
+    }
+}

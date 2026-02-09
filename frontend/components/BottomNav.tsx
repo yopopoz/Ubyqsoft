@@ -1,13 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { navigation } from "@/config/navigation";
+import { useTranslations } from "next-intl";
 
 export default function BottomNav() {
     const pathname = usePathname();
     const { canWrite, isAdmin } = useAuth();
+    const t = useTranslations('Navigation');
 
     const visibleNav = navigation.filter((item) => {
         if (item.requiresAdmin) return isAdmin;
@@ -30,7 +31,7 @@ export default function BottomNav() {
                                 {item.icon}
                             </div>
                             {/* Use name but maybe truncate or use a map if too long? "Tableau de bord" is ok-ish. */}
-                            <span className="text-[10px] font-medium mt-1 truncate max-w-[80px]">{item.shortName}</span>
+                            <span className="text-[10px] font-medium mt-1 truncate max-w-[80px]">{t(`${item.translationKey}_short`)}</span>
                         </Link>
                     );
                 })}

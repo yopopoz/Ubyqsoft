@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { shipmentService } from "@/services/shipmentService";
 import { Shipment } from "@/types/shipment";
 import ShipmentsTable from "@/components/ShipmentsTable";
 import { Card } from "@/components/ui/Card";
+import { useTranslations } from "next-intl";
 
 interface Stats {
     total: number;
@@ -19,6 +20,7 @@ export default function DashboardPage() {
     const { canWrite, token, isLoading } = useAuth();
     const [stats, setStats] = useState<Stats>({ total: 0, inTransit: 0, delivered: 0, pending: 0 });
     const [loadingStats, setLoadingStats] = useState(true);
+    const t = useTranslations('Dashboard');
 
     useEffect(() => {
         if (token) {
@@ -47,22 +49,22 @@ export default function DashboardPage() {
         }
     };
 
-    if (isLoading) return <div className="p-10 text-center animate-pulse text-slate-400">Chargement...</div>;
+    if (isLoading) return <div className="p-10 text-center animate-pulse text-slate-400">{t('loading')}</div>;
 
     return (
         <div className="space-y-10 animate-fade-in pb-20">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-slate-100 pb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-brand-primary tracking-tight">Vue d'ensemble</h1>
-                    <p className="text-slate-500 mt-2 font-medium">Gérez vos expéditions et suivez vos performances.</p>
+                    <h1 className="text-3xl font-bold text-brand-primary tracking-tight">{t('overview')}</h1>
+                    <p className="text-slate-500 mt-2 font-medium">{t('subtitle')}</p>
                 </div>
                 {canWrite && (
                     <Link href="/shipments/new" className="btn btn-primary shadow-lg shadow-brand-secondary/20 hover:shadow-brand-secondary/40 transition-all duration-300">
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Nouvelle Expédition
+                        {t('newShipment')}
                     </Link>
                 )}
             </div>
@@ -73,7 +75,7 @@ export default function DashboardPage() {
                 <div className="group relative bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Total Expéditions</p>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">{t('totalShipments')}</p>
                             <h3 className="text-4xl font-bold text-brand-primary tracking-tight">{loadingStats ? "-" : stats.total}</h3>
                         </div>
                         <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
@@ -91,7 +93,7 @@ export default function DashboardPage() {
                 <div className="group relative bg-white p-6 rounded-2xl border border-brand-secondary/10 shadow-[0_4px_20px_rgba(211,0,38,0.05)] hover:shadow-[0_8px_30px_rgba(211,0,38,0.1)] transition-all duration-300">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-brand-secondary/80 mb-1">En Transit</p>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-brand-secondary/80 mb-1">{t('inTransit')}</p>
                             <h3 className="text-4xl font-bold text-brand-secondary tracking-tight">{loadingStats ? "-" : stats.inTransit}</h3>
                         </div>
                         <div className="p-2 bg-brand-secondary/5 rounded-lg group-hover:bg-brand-secondary/10 transition-colors">
@@ -109,7 +111,7 @@ export default function DashboardPage() {
                 <div className="group relative bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Livrées</p>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">{t('delivered')}</p>
                             <h3 className="text-4xl font-bold text-slate-700 tracking-tight">{loadingStats ? "-" : stats.delivered}</h3>
                         </div>
                         <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-green-50/50 transition-colors">
@@ -127,7 +129,7 @@ export default function DashboardPage() {
                 <div className="group relative bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">En Attente</p>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">{t('pending')}</p>
                             <h3 className="text-4xl font-bold text-slate-700 tracking-tight">{loadingStats ? "-" : stats.pending}</h3>
                         </div>
                         <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-amber-50/50 transition-colors">
@@ -147,10 +149,10 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-brand-primary flex items-center gap-3">
                         <span className="w-1.5 h-6 bg-brand-secondary rounded-full inline-block"></span>
-                        Expéditions Récentes
+                        {t('recentShipments')}
                     </h2>
                     <Link href="/shipments" className="group flex items-center text-sm font-semibold text-slate-500 hover:text-brand-secondary transition-colors">
-                        Voir tout l'historique
+                        {t('viewHistory')}
                         <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>

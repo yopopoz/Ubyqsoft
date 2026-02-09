@@ -10,19 +10,20 @@ import { formatEventType, getStatusVariant } from "@/types/index";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import AddEventModal from "@/components/AddEventModal";
+import { useTranslations } from "next-intl";
 
 // --- Utility Functions ---
 
-function getTimeAgo(dateStr: string): string {
+function getTimeAgo(dateStr: string, t: any): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `il y a ${days}j`;
-    if (hours > 0) return `il y a ${hours}h`;
-    if (minutes > 0) return `il y a ${minutes}min`;
-    return "à l'instant";
+    if (days > 0) return t('timeAgo.days', { n: days });
+    if (hours > 0) return t('timeAgo.hours', { n: hours });
+    if (minutes > 0) return t('timeAgo.minutes', { n: minutes });
+    return t('timeAgo.justNow');
 }
 
 function formatDate(dateStr?: string | Date | null): string {
@@ -33,6 +34,7 @@ function formatDate(dateStr?: string | Date | null): string {
 // --- Helper Components ---
 
 function HealthBadge({ shipment }: { shipment: Shipment }) {
+    const t = useTranslations('ShipmentDetails');
     if (!shipment.planned_eta) return null;
 
     const eta = new Date(shipment.planned_eta);
@@ -52,7 +54,7 @@ function HealthBadge({ shipment }: { shipment: Shipment }) {
         return (
             <span className="bg-red-50 text-red-600 text-xs font-bold px-2 py-0.5 rounded border border-red-100 uppercase tracking-wide flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Retard Confirmé
+                {t('confirmedDelay')}
             </span>
         );
     }
@@ -61,7 +63,7 @@ function HealthBadge({ shipment }: { shipment: Shipment }) {
         return (
             <span className="bg-orange-50 text-orange-600 text-xs font-bold px-2 py-0.5 rounded border border-orange-100 uppercase tracking-wide flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                Risque de Retard
+                {t('delayRisk')}
             </span>
         );
     }
@@ -69,12 +71,14 @@ function HealthBadge({ shipment }: { shipment: Shipment }) {
     return (
         <span className="bg-emerald-50 text-emerald-600 text-xs font-bold px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-wide flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-            Statut Sain
+            {t('healthyStatus')}
         </span>
     );
 }
 
 function PredictiveInsight({ shipment }: { shipment: Shipment }) {
+    const t = useTranslations('ShipmentDetails');
+    const tEvents = useTranslations('Events');
     const isRisky = shipment.planned_eta &&
         (new Date(shipment.planned_eta).getTime() - Date.now() < 5 * 24 * 60 * 60 * 1000) &&
         ([EventType.ORDER_INFO, EventType.PRODUCTION_READY] as EventTypeValue[]).includes(shipment.status as EventTypeValue);
@@ -88,11 +92,11 @@ function PredictiveInsight({ shipment }: { shipment: Shipment }) {
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 </div>
                 <div>
-                    <h3 className="text-sm font-bold text-slate-800">Analyse Prédictive IA</h3>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                        Compte tenu de l'avancement actuel (Phase: {LABELS[shipment.status] || shipment.status}) et de l'ETA prévu dans moins de 5 jours, nos modèles prédisent un risque de retard de <strong>3 à 5 jours</strong>.
-                    </p>
-                    <button className="text-xs font-semibold text-orange-600 mt-2 hover:underline">Voir les recommandations &rarr;</button>
+                    <h3 className="text-sm font-bold text-slate-800">{t('aiPrediction')}</h3>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t.raw('aiPredictionText', { phase: tEvents('types.' + (shipment.status as EventTypeValue)) }) }}
+                    />
+                    <button className="text-xs font-semibold text-orange-600 mt-2 hover:underline">{t('viewRecommendations')} &rarr;</button>
                 </div>
             </div>
         </div>
@@ -100,22 +104,23 @@ function PredictiveInsight({ shipment }: { shipment: Shipment }) {
 }
 
 function ETADisplay({ eta, status }: { eta?: string | Date | null, status: string }) {
+    const t = useTranslations('ShipmentDetails');
     if (!eta) return <span className="text-slate-400">-</span>;
 
     const daysLeft = Math.ceil((new Date(eta).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
     if (status === EventType.FINAL_DELIVERY) {
-        return <span className="text-emerald-600 font-bold">Livré</span>;
+        return <span className="text-emerald-600 font-bold">{t('delivered')}</span>;
     }
 
     if (daysLeft < 0) {
-        return <span className="text-red-500 font-bold">En retard de {Math.abs(daysLeft)}j</span>;
+        return <span className="text-red-500 font-bold">{t('lateBy', { days: Math.abs(daysLeft) })}</span>;
     }
 
     return (
         <div className="flex items-baseline gap-1">
             <span className="text-2xl font-bold text-slate-700">{daysLeft}</span>
-            <span className="text-xs text-slate-500 font-medium uppercase">jours restants</span>
+            <span className="text-xs text-slate-500 font-medium uppercase">{t('daysLeft')}</span>
         </div>
     );
 }
@@ -138,23 +143,14 @@ function InfoItem({ label, value, icon, mono }: { label: string, value?: string 
     );
 }
 
-// Helper for labels (can be moved to a translation file)
-const LABELS: Record<string, string> = {
-    [EventType.ORDER_INFO]: "Commande Reçue",
-    [EventType.PRODUCTION_READY]: "Production Terminée",
-    [EventType.LOADING_IN_PROGRESS]: "Chargement en cours",
-    [EventType.SEAL_NUMBER_CUTOFF]: "Scellé Posé",
-    [EventType.EXPORT_CLEARANCE_CAMBODIA]: "Dédouanement Export",
-    [EventType.TRANSIT_OCEAN]: "Transit Maritime",
-    [EventType.ARRIVAL_PORT_NYNJ]: "Arrivée Port NY/NJ",
-    [EventType.IMPORT_CLEARANCE_CBP]: "Dédouanement Import",
-    [EventType.FINAL_DELIVERY]: "Livraison Finale",
-};
+// Helper for labels removed - usage replaced by tEvents
 
 export default function ShipmentDetailPage() {
     const { id } = useParams();
     const router = useRouter();
     const { token, canWrite, logout } = useAuth();
+    const t = useTranslations('ShipmentDetails');
+    const tEvents = useTranslations('Events');
 
     const [shipment, setShipment] = useState<Shipment | null>(null);
     const [events, setEvents] = useState<Event[]>([]);
@@ -181,8 +177,8 @@ export default function ShipmentDetailPage() {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-400">Chargement...</div>;
-    if (!shipment) return <div className="p-10 text-center">Expédition introuvable</div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-400">{t('loading')}</div>;
+    if (!shipment) return <div className="p-10 text-center">{t('notFound')}</div>;
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-fade-in">
@@ -207,7 +203,7 @@ export default function ShipmentDetailPage() {
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        Créé le {new Date(shipment.created_at).toLocaleDateString()}
+                                        {t('createdOn', { date: new Date(shipment.created_at).toLocaleDateString() })}
                                     </span>
                                 </div>
                             </div>
@@ -216,17 +212,17 @@ export default function ShipmentDetailPage() {
                         {/* Quick Metrics Bar */}
                         <div className="flex items-center gap-8 pt-2">
                             <div>
-                                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Statut Actuel</div>
+                                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('currentStatus')}</div>
                                 <Badge variant={getStatusVariant(shipment.status)} className="px-3 py-1 text-sm">
-                                    {LABELS[shipment.status] || formatEventType(shipment.status)}
+                                    {tEvents('types.' + (shipment.status as EventTypeValue)) || formatEventType(shipment.status)}
                                 </Badge>
                                 <span className="text-xs text-slate-400 ml-2 italic">
-                                    {events[0] ? `Mise à jour: ${getTimeAgo(events[0].timestamp.toString())}` : ''}
+                                    {events[0] ? `${t('updated')} ${getTimeAgo(events[0].timestamp.toString(), t)}` : ''}
                                 </span>
                             </div>
                             <div className="hidden md:block w-px h-10 bg-slate-100"></div>
                             <div className="hidden md:block">
-                                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Délai Estimé</div>
+                                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('estimatedDelay')}</div>
                                 <ETADisplay eta={shipment.planned_eta} status={shipment.status} />
                             </div>
                         </div>
@@ -238,20 +234,22 @@ export default function ShipmentDetailPage() {
                         <div className="grid grid-cols-2 gap-2">
                             <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-secondary transition-colors group">
                                 <svg className="w-4 h-4 text-slate-400 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                Email
-                            </button>
-                            <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-secondary transition-colors group">
-                                <svg className="w-4 h-4 text-slate-400 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                Docs
-                            </button>
-                            <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-secondary transition-colors group">
-                                <svg className="w-4 h-4 text-slate-400 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                Print
-                            </button>
-                            <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors border-red-100">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                Alerte
-                            </button>
+                                <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-secondary transition-colors group">
+                                    <svg className="w-4 h-4 text-slate-400 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    {t('actions.email')}
+                                </button>
+                                <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-secondary transition-colors group">
+                                    <svg className="w-4 h-4 text-slate-400 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    {t('actions.docs')}
+                                </button>
+                                <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-secondary transition-colors group">
+                                    <svg className="w-4 h-4 text-slate-400 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                    {t('actions.print')}
+                                </button>
+                                <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors border-red-100">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    {t('actions.alert')}
+                                </button>
                         </div>
                     </div>
                 </div>
@@ -266,7 +264,7 @@ export default function ShipmentDetailPage() {
 
                     {/* Route & Dates - Enhanced */}
                     <Card className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                        <CardHeader title="Route & Planning"
+                        <CardHeader title={t('routePlanning')}
                             action={<span className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100">M/V {shipment.vessel || "TBD"}</span>}
                         />
                         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mt-6 relative pb-6 border-b border-surface-2">
@@ -287,9 +285,9 @@ export default function ShipmentDetailPage() {
                             {/* Transit Badge */}
                             <div className="flex flex-col items-center z-10 bg-white px-2">
                                 <div className="bg-slate-50 border border-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2">
-                                    Transit
+                                    {t('transit')}
                                 </div>
-                                <span className="text-xs font-mono text-slate-400">~25 jours</span>
+                                <span className="text-xs font-mono text-slate-400">~25 j</span>
                             </div>
 
                             {/* Destination */}
@@ -307,13 +305,13 @@ export default function ShipmentDetailPage() {
                             {/* ... existing code ... */}
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Mise à Disposition</span>
+                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">{t('mad')}</span>
                                     <span className="text-sm font-bold text-slate-800">{shipment.mad_date ? new Date(shipment.mad_date).toLocaleDateString() : "-"}</span>
                                 </div>
                             </div>
                             <div className="flex justify-between items-center border-l border-slate-200 pl-4">
                                 <div>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">In-Transit Scan</span>
+                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">{t('its')}</span>
                                     <span className="text-sm font-bold text-slate-800">{shipment.its_date ? new Date(shipment.its_date).toLocaleDateString() : "-"}</span>
                                 </div>
                             </div>
@@ -322,53 +320,52 @@ export default function ShipmentDetailPage() {
 
                     {/* Commercial Info - Enhanced Grid */}
                     <Card className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                        <CardHeader title="Infos Commerciales" />
+                        <CardHeader title={t('commercialInfo')} />
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 mt-2">
-                            <InfoItem label="Client" value={shipment.customer} icon="user" />
-                            <InfoItem label="Fournisseur" value={shipment.supplier} icon="truck" />
-                            <InfoItem label="Commande (PO)" value={shipment.order_number} icon="hashtag" />
-                            <InfoItem label="SKU / Produit" value={shipment.sku} />
-                            <InfoItem label="Quantité" value={shipment.quantity?.toLocaleString()} />
-                            <InfoItem label="Incoterm" value={shipment.incoterm} />
-                            <InfoItem label="Lieu Incoterm" value={shipment.incoterm_city} />
+                            <InfoItem label={t('customer')} value={shipment.customer} icon="user" />
+                            <InfoItem label={t('supplier')} value={shipment.supplier} icon="truck" />
+                            <InfoItem label={t('order')} value={shipment.order_number} icon="hashtag" />
+                            <InfoItem label={t('sku')} value={shipment.sku} />
+                            <InfoItem label={t('quantity')} value={shipment.quantity?.toLocaleString()} />
+                            <InfoItem label={t('incoterm')} value={shipment.incoterm} />
+                            <InfoItem label={t('place')} value={shipment.incoterm_city} />
                         </div>
                     </Card>
 
                     {/* Logistics Info */}
                     <Card className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
-                        <CardHeader title="Logistique" />
+                        <CardHeader title={t('logistics')} />
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 mt-2">
-                            {/* ... existing code ... */}
-                            <InfoItem label="Conteneur" value={shipment.container_number} mono icon="box" />
-                            <InfoItem label="Scellé" value={shipment.seal_number} mono icon="lock" />
-                            <InfoItem label="Poids Brut" value={shipment.weight_kg ? `${shipment.weight_kg} kg` : '-'} />
-                            <InfoItem label="Volume" value={shipment.volume_cbm ? `${shipment.volume_cbm} m³` : '-'} />
-                            <InfoItem label="Palettes" value={shipment.nb_pallets?.toString()} />
-                            <InfoItem label="Cartons" value={shipment.nb_cartons?.toString()} />
+                            <InfoItem label={t('container')} value={shipment.container_number} mono icon="box" />
+                            <InfoItem label={t('seal')} value={shipment.seal_number} mono icon="lock" />
+                            <InfoItem label={t('weight')} value={shipment.weight_kg ? `${shipment.weight_kg} kg` : '-'} />
+                            <InfoItem label={t('volume')} value={shipment.volume_cbm ? `${shipment.volume_cbm} m³` : '-'} />
+                            <InfoItem label={t('pallets')} value={shipment.nb_pallets?.toString()} />
+                            <InfoItem label={t('cartons')} value={shipment.nb_cartons?.toString()} />
                         </div>
                     </Card>
 
                     {/* References - More Compact */}
                     <Card className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
-                        <CardHeader title="Référentiels & Contacts" />
+                        <CardHeader title={t('references')} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-start">
                                 <div>
-                                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Réf. Pure Trade</div>
+                                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('pureTradeRef')}</div>
                                     <div className="font-mono text-sm font-bold text-slate-800">{shipment.pure_trade_ref || "-"}</div>
                                     <div className="text-xs text-slate-500 mt-2 flex items-center gap-1">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                        {shipment.responsable_pure_trade || "Non assigné"}
+                                        {shipment.responsable_pure_trade || t('unassigned')}
                                     </div>
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-start">
                                 <div>
-                                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Réf. Transitaire</div>
+                                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('forwarderRef')}</div>
                                     <div className="font-mono text-sm font-bold text-slate-800">{shipment.forwarder_ref || "-"}</div>
                                     <div className="text-xs text-slate-500 mt-2 flex items-center gap-1">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                        {shipment.interlocuteur || "Non assigné"}
+                                        {shipment.interlocuteur || t('unassigned')}
                                     </div>
                                 </div>
                             </div>
@@ -383,7 +380,7 @@ export default function ShipmentDetailPage() {
 
                     {/* Quick Documents */}
                     <Card className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
-                        <CardHeader title="Documents" action={<button className="text-xs font-semibold text-brand-secondary hover:underline">Tout voir</button>} />
+                        <CardHeader title={t('documents')} action={<button className="text-xs font-semibold text-brand-secondary hover:underline">{t('viewAll')}</button>} />
                         <div className="space-y-3 mt-4">
                             {[
                                 { name: "Bill of Lading", type: "PDF", size: "2.4 MB", date: "24 Jan 2026" },
@@ -405,14 +402,14 @@ export default function ShipmentDetailPage() {
                             ))}
                             <button className="w-full py-2 border-2 border-dashed border-slate-200 rounded-lg text-sm text-slate-400 font-medium hover:border-brand-secondary hover:text-brand-secondary transition-colors flex items-center justify-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                Ajouter un document
+                                {t('addDocument')}
                             </button>
                         </div>
                     </Card>
 
                     {/* Enhanced Timeline */}
                     <Card className="h-full max-h-[calc(100vh-100px)] overflow-y-auto animate-slide-up" style={{ animationDelay: '0.5s' }}>
-                        <CardHeader title="Fil d'actualité" action={<span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-500">{events.length} logs</span>} />
+                        <CardHeader title={t('activityLog')} action={<span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-500">{events.length} {t('logs')}</span>} />
 
                         <div className="relative border-l-2 border-slate-100 ml-4 mt-6 space-y-8 pb-4">
                             {events.map((event, idx) => {
@@ -434,7 +431,7 @@ export default function ShipmentDetailPage() {
                                         `}>
                                             <div className="flex items-center justify-between">
                                                 <div className="text-sm font-bold text-slate-800">
-                                                    {LABELS[event.type] || formatEventType(event.type)}
+                                                    {tEvents('types.' + (event.type as EventTypeValue)) || formatEventType(event.type)}
                                                 </div>
                                                 <div className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
                                                     {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -442,13 +439,13 @@ export default function ShipmentDetailPage() {
                                             </div>
 
                                             <div className="text-xs text-slate-500 mt-0.5 font-medium">
-                                                {new Date(event.timestamp).toLocaleDateString("fr-FR", { weekday: 'long', day: 'numeric', month: 'long' })}
+                                                {new Date(event.timestamp).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
                                             </div>
 
                                             {event.critical && (
                                                 <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-100 rounded text-xs font-semibold text-red-600">
                                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                                    Attention Requise
+                                                    {t('attentionRequired')}
                                                 </div>
                                             )}
 

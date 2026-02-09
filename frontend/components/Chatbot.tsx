@@ -2,13 +2,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 
 export default function Chatbot() {
+    const t = useTranslations('Chatbot');
     const { token } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<{ role: string; content: string }[]>([
-        { role: "assistant", content: "Bonjour ! Je suis votre assistant logistique PURE TRADE. Comment puis-je vous aider aujourd'hui ?" }
+        { role: "assistant", content: t('welcome') }
     ]);
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,7 +82,7 @@ export default function Chatbot() {
 
         } catch (error: any) {
             console.error(error);
-            const errorMessage = error.message || "Une erreur est survenue lors de la communication avec le serveur.";
+            const errorMessage = error.message || t('error');
             setMessages((prev) => [...prev, { role: "assistant", content: `❌ ${errorMessage}` }]);
         } finally {
             setLoading(false);
@@ -124,10 +126,10 @@ export default function Chatbot() {
                                 </svg>
                             </div>
                             <div>
-                                <h3 className="font-bold text-white text-lg tracking-tight">PURE AI Assistant</h3>
+                                <h3 className="font-bold text-white text-lg tracking-tight">{t('title')}</h3>
                                 <div className="flex items-center gap-1.5 line-clamp-1">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <p className="text-xs text-slate-400 font-medium">Logistique & Suivi en temps réel</p>
+                                    <p className="text-xs text-slate-400 font-medium">{t('subtitle')}</p>
                                 </div>
                             </div>
                         </div>
@@ -146,7 +148,7 @@ export default function Chatbot() {
                                     {msg.content}
                                 </div>
                                 <span className="text-[10px] text-slate-400 mt-1.5 px-1 uppercase tracking-wider font-semibold">
-                                    {msg.role === "user" ? "Vous" : "Pure AI"}
+                                    {msg.role === "user" ? t('user') : t('assistant')}
                                 </span>
                             </div>
                         ))}
@@ -172,7 +174,7 @@ export default function Chatbot() {
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                                placeholder="Numéro d'expédition ou question..."
+                                placeholder={t('placeholder')}
                                 className="w-full pl-5 pr-14 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-secondary/10 focus:border-brand-secondary/50 focus:bg-white transition-all duration-300"
                             />
                             <button
@@ -186,7 +188,7 @@ export default function Chatbot() {
                             </button>
                         </div>
                         <p className="text-[10px] text-center text-slate-400 mt-4 uppercase tracking-widest font-bold">
-                            Powered by PURE TRADE Logistics Intelligence
+                            {t('poweredBy')}
                         </p>
                     </div>
                 </div>

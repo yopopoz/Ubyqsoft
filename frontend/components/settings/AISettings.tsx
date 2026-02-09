@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 
 type AIProvider = 'gemini' | 'claude' | 'openai';
 
@@ -14,6 +15,7 @@ interface AIConfig {
 }
 
 export default function AISettings() {
+    const t = useTranslations('Settings.AI');
     const [configs, setConfigs] = useState<Record<AIProvider, AIConfig>>({
         gemini: { provider: 'gemini', apiKey: '', model: 'gemini-pro', enabled: false },
         claude: { provider: 'claude', apiKey: '', model: 'claude-3-opus', enabled: false },
@@ -100,10 +102,10 @@ export default function AISettings() {
                 token
             });
 
-            alert("Configuration sauvegardée !");
+            alert(t('success'));
         } catch (e) {
             console.error("Failed to save", e);
-            alert("Erreur lors de la sauvegarde");
+            alert(t('error'));
         } finally {
             setSaving(false);
         }
@@ -116,29 +118,29 @@ export default function AISettings() {
         }));
     };
 
-    if (loading) return <div>Chargement...</div>;
+    if (loading) return <div>{t('loading')}</div>;
 
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-slate-900">Intelligence Artificielle</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t('title')}</h2>
                 <button
                     onClick={saveSettings}
                     disabled={saving}
                     className="bg-brand-primary hover:bg-brand-secondary text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
-                    {saving ? 'Sauvegarde...' : 'Sauvegarder tout'}
+                    {saving ? t('saving') : t('save')}
                 </button>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">Fournisseurs</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('providers.title')}</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Gemini Config */}
                     <div className={`p-4 rounded-xl border-2 transition-all ${configs.gemini.enabled ? 'border-blue-500 bg-blue-50/10' : 'border-slate-200 opacity-75'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                                <span className="text-2xl">✨</span> Gemini
+                                <span className="text-2xl">✨</span> {t('providers.gemini')}
                             </h4>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -152,7 +154,7 @@ export default function AISettings() {
                         </div>
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Clé API</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('fields.apiKey')}</label>
                                 <input
                                     type="password"
                                     value={configs.gemini.apiKey}
@@ -162,7 +164,7 @@ export default function AISettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Modèle</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('fields.model')}</label>
                                 <select
                                     value={configs.gemini.model}
                                     onChange={(e) => handleConfigChange('gemini', 'model', e.target.value)}
@@ -179,7 +181,7 @@ export default function AISettings() {
                     <div className={`p-4 rounded-xl border-2 transition-all ${configs.claude.enabled ? 'border-orange-500 bg-orange-50/10' : 'border-slate-200 opacity-75'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                                <span className="text-2xl">🧠</span> Claude
+                                <span className="text-2xl">🧠</span> {t('providers.claude')}
                             </h4>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -193,7 +195,7 @@ export default function AISettings() {
                         </div>
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Clé API</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('fields.apiKey')}</label>
                                 <input
                                     type="password"
                                     value={configs.claude.apiKey}
@@ -203,7 +205,7 @@ export default function AISettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Modèle</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('fields.model')}</label>
                                 <select
                                     value={configs.claude.model}
                                     onChange={(e) => handleConfigChange('claude', 'model', e.target.value)}
@@ -221,7 +223,7 @@ export default function AISettings() {
                     <div className={`p-4 rounded-xl border-2 transition-all ${configs.openai.enabled ? 'border-green-500 bg-green-50/10' : 'border-slate-200 opacity-75'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                                <span className="text-2xl">🤖</span> ChatGPT
+                                <span className="text-2xl">🤖</span> {t('providers.openai')}
                             </h4>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -235,7 +237,7 @@ export default function AISettings() {
                         </div>
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Clé API</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('fields.apiKey')}</label>
                                 <input
                                     type="password"
                                     value={configs.openai.apiKey}
@@ -245,7 +247,7 @@ export default function AISettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Modèle</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('fields.model')}</label>
                                 <select
                                     value={configs.openai.model}
                                     onChange={(e) => handleConfigChange('openai', 'model', e.target.value)}
@@ -264,25 +266,25 @@ export default function AISettings() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Chatbot Prompt */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Prompt Système du Chatbot API</h3>
-                    <p className="text-sm text-slate-500 mb-4">Définissez la personnalité et les connaissances de base de votre assistant virtuel.</p>
+                    <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('prompts.chatbot.title')}</h3>
+                    <p className="text-sm text-slate-500 mb-4">{t('prompts.chatbot.description')}</p>
                     <textarea
                         className="w-full h-64 p-4 rounded-lg border-slate-200 focus:border-brand-primary focus:ring-brand-primary font-mono text-sm bg-slate-50"
                         value={prompts.chatbot}
                         onChange={(e) => setPrompts({ ...prompts, chatbot: e.target.value })}
-                        placeholder="Tu es un expert..."
+                        placeholder={t('prompts.chatbot.placeholder')}
                     />
                 </div>
 
                 {/* Predictive AI Prompt */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Prompt d'Analyse Prédictive</h3>
-                    <p className="text-sm text-slate-500 mb-4">Instructions pour l'analyse automatique des expéditions et des risques de retard.</p>
+                    <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('prompts.predictive.title')}</h3>
+                    <p className="text-sm text-slate-500 mb-4">{t('prompts.predictive.description')}</p>
                     <textarea
                         className="w-full h-64 p-4 rounded-lg border-slate-200 focus:border-brand-primary focus:ring-brand-primary font-mono text-sm bg-slate-50"
                         value={prompts.predictive}
                         onChange={(e) => setPrompts({ ...prompts, predictive: e.target.value })}
-                        placeholder="Analyse les données..."
+                        placeholder={t('prompts.predictive.placeholder')}
                     />
                 </div>
             </div>

@@ -2,6 +2,7 @@ import React from "react";
 
 export interface NavItem {
     name: string;
+    translationKey: string;
     shortName: string; // New field for mobile
     href: string;
     icon: React.ReactNode;
@@ -12,6 +13,7 @@ export interface NavItem {
 export const navigation: NavItem[] = [
     {
         name: "Tableau de bord",
+        translationKey: "dashboard",
         shortName: "Accueil",
         href: "/",
         icon: (
@@ -22,6 +24,7 @@ export const navigation: NavItem[] = [
     },
     {
         name: "Expéditions",
+        translationKey: "shipments",
         shortName: "Envois",
         href: "/shipments",
         icon: (
@@ -32,6 +35,7 @@ export const navigation: NavItem[] = [
     },
     {
         name: "Nouvel envoi",
+        translationKey: "new_shipment",
         shortName: "Nouveau",
         href: "/shipments/new",
         icon: (
@@ -43,6 +47,7 @@ export const navigation: NavItem[] = [
     },
     {
         name: "Rapports",
+        translationKey: "reports",
         shortName: "Rapports",
         href: "/reports",
         icon: (
@@ -54,6 +59,7 @@ export const navigation: NavItem[] = [
     },
     {
         name: "Utilisateurs",
+        translationKey: "users",
         shortName: "Admin",
         href: "/users",
         icon: (
@@ -65,6 +71,7 @@ export const navigation: NavItem[] = [
     },
     {
         name: "Import Excel",
+        translationKey: "import",
         shortName: "Import",
         href: "/admin/import",
         icon: (
@@ -76,6 +83,7 @@ export const navigation: NavItem[] = [
     },
     {
         name: "Paramètres",
+        translationKey: "settings",
         shortName: "Réglages",
         href: "/admin/settings",
         icon: (

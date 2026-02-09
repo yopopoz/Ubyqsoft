@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 
 export default function LogisticsSettings() {
+    const t = useTranslations('Settings.Logistics');
     const { token } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [config, setConfig] = useState({
@@ -54,10 +56,10 @@ export default function LogisticsSettings() {
                 ]),
                 token
             });
-            alert("Configuration sauvegardée avec succès !");
+            alert(t('success'));
         } catch (e) {
             console.error(e);
-            alert("Erreur lors de la sauvegarde");
+            alert(t('error'));
         } finally {
             setIsLoading(false);
         }
@@ -67,8 +69,8 @@ export default function LogisticsSettings() {
         <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                 <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-slate-800">APIs Logistiques & Transporteurs</h3>
-                    <p className="text-sm text-slate-500 mt-1">Configurez les accès aux services externes pour la synchronisation automatique.</p>
+                    <h3 className="text-lg font-semibold text-slate-800">{t('title')}</h3>
+                    <p className="text-sm text-slate-500 mt-1">{t('description')}</p>
                 </div>
 
                 <div className="space-y-8">
@@ -76,11 +78,11 @@ export default function LogisticsSettings() {
                     <div className="p-5 bg-slate-50 rounded-lg border border-slate-200">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="h-8 w-8 bg-blue-900 rounded flex items-center justify-center text-white text-xs font-bold">CMA</div>
-                            <h4 className="font-semibold text-slate-800">CMA CGM Group</h4>
+                            <h4 className="font-semibold text-slate-800">{t('cma.title')}</h4>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Client ID</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('cma.clientId')}</label>
                                 <input
                                     type="text"
                                     value={config.cmaClientId}
@@ -90,7 +92,7 @@ export default function LogisticsSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Client Secret</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('cma.clientSecret')}</label>
                                 <input
                                     type="password"
                                     value={config.cmaClientSecret}
@@ -106,11 +108,11 @@ export default function LogisticsSettings() {
                     <div className="p-5 bg-slate-50 rounded-lg border border-slate-200">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="h-8 w-8 bg-[#42B3E5] rounded flex items-center justify-center text-white text-xs font-bold">★</div>
-                            <h4 className="font-semibold text-slate-800">Maersk</h4>
+                            <h4 className="font-semibold text-slate-800">{t('maersk.title')}</h4>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Consumer Key (Client ID)</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('maersk.clientId')}</label>
                                 <input
                                     type="text"
                                     value={config.maerskClientId}
@@ -120,7 +122,7 @@ export default function LogisticsSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Consumer Secret</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('maersk.clientSecret')}</label>
                                 <input
                                     type="password"
                                     value={config.maerskClientSecret}
@@ -135,11 +137,11 @@ export default function LogisticsSettings() {
                     {/* Tracking & Data Services */}
                     <div className="p-5 bg-slate-50 rounded-lg border border-slate-200">
                         <div className="flex items-center gap-3 mb-4">
-                            <h4 className="font-semibold text-slate-800">Services de Données</h4>
+                            <h4 className="font-semibold text-slate-800">{t('dataServices.title')}</h4>
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">VesselFinder API Key</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('dataServices.vesselFinder')}</label>
                                 <input
                                     type="password"
                                     value={config.vesselFinderKey}
@@ -149,7 +151,7 @@ export default function LogisticsSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">USITC DataWeb Token (Login.gov)</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('dataServices.usitc')}</label>
                                 <input
                                     type="password"
                                     value={config.usitcToken}
@@ -174,7 +176,7 @@ export default function LogisticsSettings() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             )}
-                            Sauvegarder les configurations
+                            {t('save')}
                         </button>
                     </div>
                 </div>

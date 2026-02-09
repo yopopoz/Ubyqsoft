@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -12,6 +14,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const router = useRouter();
+    const t = useTranslations('Login');
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -32,11 +35,11 @@ export default function LoginPage() {
             if (res.ok && data.access_token) {
                 login(data.access_token);
             } else {
-                setError(data.detail || "Identifiants invalides");
+                setError(data.detail || t('errorInvalid'));
             }
         } catch (e) {
             console.error("Login successful but error during state update:", e);
-            setError("Erreur de connexion. Veuillez réessayer.");
+            setError(t('errorGeneric'));
         } finally {
             setLoading(false);
         }
@@ -69,10 +72,10 @@ export default function LoginPage() {
 
                     <div className="space-y-3 animate-slide-up w-full">
                         <h1 className="text-lg lg:text-xl font-light tracking-widest text-slate-600 uppercase whitespace-nowrap">
-                            PROJET D'EXCEPTION
+                            {t('tagline1')}
                         </h1>
                         <h1 className="text-xl lg:text-2xl font-bold tracking-widest text-[#D30026] uppercase whitespace-nowrap">
-                            SOLUTION D'EXCEPTION
+                            {t('tagline2')}
                         </h1>
                     </div>
 
@@ -82,6 +85,9 @@ export default function LoginPage() {
 
             {/* Right Panel - Login Form (White) */}
             <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative">
+                <div className="absolute top-4 right-4">
+                    <LanguageSwitcher />
+                </div>
                 <div className="w-full max-w-md animate-fade-in bg-white p-12 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.03)] border border-slate-50 relative z-10">
                     <div className="text-center mb-10">
                         <div className="lg:hidden mb-8 relative w-40 h-16 mx-auto">
@@ -93,13 +99,13 @@ export default function LoginPage() {
                                 priority
                             />
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Espace Client</h2>
-                        <p className="text-slate-500 mt-2">Connectez-vous à votre compte Pure Track</p>
+                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h2>
+                        <p className="text-slate-500 mt-2">{t('prompt')}</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">Email professionnel</label>
+                            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">{t('emailLabel')}</label>
                             <input
                                 id="email"
                                 type="email"
@@ -107,12 +113,12 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D30026]/20 focus:border-[#D30026] transition-all duration-200"
-                                placeholder="nom@pure-trade.com"
+                                placeholder={t('emailPlaceholder')}
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">Mot de passe</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">{t('passwordLabel')}</label>
                             <input
                                 id="password"
                                 type="password"
@@ -120,7 +126,7 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D30026]/20 focus:border-[#D30026] transition-all duration-200"
-                                placeholder="••••••••"
+                                placeholder={t('passwordPlaceholder')}
                             />
                         </div>
 
@@ -144,10 +150,10 @@ export default function LoginPage() {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
-                                    Connexion...
+                                    {t('submitLoading')}
                                 </span>
                             ) : (
-                                "Se connecter"
+                                t('submit')
                             )}
                         </button>
                     </form>
@@ -156,7 +162,7 @@ export default function LoginPage() {
                 {/* Footer Copyright */}
                 <div className="absolute bottom-8 left-0 right-0 text-center">
                     <p className="text-xs text-slate-400">
-                        © 2026 Pure Track. Tous droits réservés.
+                        {t('footer')}
                     </p>
                 </div>
             </div>

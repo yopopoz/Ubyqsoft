@@ -2,57 +2,58 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 import { EventType, EventTypeValue } from "@/types";
 
-// Catégories d'événements traduites en français
-const EVENT_TYPE_CATEGORIES_FR: Record<string, { value: EventTypeValue; label: string }[]> = {
-    "Production & Chargement": [
-        { value: EventType.PRODUCTION_READY, label: "Production terminée" },
-        { value: EventType.LOADING_IN_PROGRESS, label: "Chargement en cours" },
-        { value: EventType.SEAL_NUMBER_CUTOFF, label: "Scellé posé" },
+// Categories mapping (keys correspond to translation keys)
+const EVENT_CATEGORIES: Record<string, EventTypeValue[]> = {
+    "production_loading": [
+        EventType.PRODUCTION_READY,
+        EventType.LOADING_IN_PROGRESS,
+        EventType.SEAL_NUMBER_CUTOFF,
     ],
-    "Export & Transit": [
-        { value: EventType.EXPORT_CLEARANCE_CAMBODIA, label: "Dédouanement export" },
-        { value: EventType.TRANSIT_OCEAN, label: "Transit maritime" },
-        { value: EventType.CONTAINER_READY_FOR_DEPARTURE, label: "Conteneur prêt au départ" },
+    "export_transit": [
+        EventType.EXPORT_CLEARANCE_CAMBODIA,
+        EventType.TRANSIT_OCEAN,
+        EventType.CONTAINER_READY_FOR_DEPARTURE,
     ],
-    "Arrivée & Import": [
-        { value: EventType.ARRIVAL_PORT_NYNJ, label: "Arrivée au port" },
-        { value: EventType.IMPORT_CLEARANCE_CBP, label: "Dédouanement import" },
-        { value: EventType.FINAL_DELIVERY, label: "Livraison finale" },
+    "arrival_import": [
+        EventType.ARRIVAL_PORT_NYNJ,
+        EventType.IMPORT_CLEARANCE_CBP,
+        EventType.FINAL_DELIVERY,
     ],
-    "Opérationnels": [
-        { value: EventType.ORDER_INFO, label: "Information commande" },
-        { value: EventType.PHOTOS_CONTAINER_WEIGHT, label: "Photos & poids conteneur" },
-        { value: EventType.GPS_POSITION_ETA_ETD, label: "Position GPS / ETA / ETD" },
-        { value: EventType.UNLOADING_GATE_OUT, label: "Déchargement - Sortie porte" },
-        { value: EventType.CUSTOMS_STATUS_DECLARATION, label: "Déclaration douanière" },
-        { value: EventType.UNLOADING_TIME_CHECKS, label: "Contrôle temps déchargement" },
+    "operational": [
+        EventType.ORDER_INFO,
+        EventType.PHOTOS_CONTAINER_WEIGHT,
+        EventType.GPS_POSITION_ETA_ETD,
+        EventType.UNLOADING_GATE_OUT,
+        EventType.CUSTOMS_STATUS_DECLARATION,
+        EventType.UNLOADING_TIME_CHECKS,
     ],
-
 };
 
 // --- Dynamic Fields Configuration ---
-const getDynamicFields = (type: EventTypeValue) => {
+// --- Dynamic Fields Configuration ---
+const getDynamicFields = (type: EventTypeValue, t: any) => {
     switch (type) {
         case EventType.SEAL_NUMBER_CUTOFF:
-            return [{ name: "seal_number", label: "Numéro de Scellé", type: "text", placeholder: "Ex: JKL123456" }];
+            return [{ name: "seal_number", label: t('fields.seal_number'), type: "text", placeholder: "Ex: JKL123456" }];
         case EventType.CONTAINER_READY_FOR_DEPARTURE:
-            return [{ name: "container_number", label: "Numéro de Conteneur", type: "text", placeholder: "Ex: MSCU1234567" }];
+            return [{ name: "container_number", label: t('fields.container_number'), type: "text", placeholder: "Ex: MSCU1234567" }];
         case EventType.PHOTOS_CONTAINER_WEIGHT:
             return [
-                { name: "weight_kg", label: "Poids (kg)", type: "number", placeholder: "Ex: 15400" },
-                { name: "photo_url", label: "Lien Photo (URL)", type: "text", placeholder: "https://..." }
+                { name: "weight_kg", label: t('fields.weight_kg'), type: "number", placeholder: "Ex: 15400" },
+                { name: "photo_url", label: t('fields.photo_url'), type: "text", placeholder: "https://..." }
             ];
         case EventType.GPS_POSITION_ETA_ETD:
             return [
-                { name: "location", label: "Position Actuelle", type: "text", placeholder: "Ex: Port of Singapore" },
-                { name: "new_eta", label: "Nouvelle ETA Estimée", type: "date" }
+                { name: "location", label: t('fields.location'), type: "text", placeholder: "Ex: Port of Singapore" },
+                { name: "new_eta", label: t('fields.new_eta'), type: "date" }
             ];
         case EventType.TRANSIT_OCEAN:
             return [
-                { name: "vessel_name", label: "Navire", type: "text", placeholder: "Ex: MAERSK SEOUL" },
-                { name: "voyage_ref", label: "Numéro de Voyage", type: "text", placeholder: "Ex: 042E" }
+                { name: "vessel_name", label: t('fields.vessel_name'), type: "text", placeholder: "Ex: MAERSK SEOUL" },
+                { name: "voyage_ref", label: t('fields.voyage_ref'), type: "text", placeholder: "Ex: 042E" }
             ];
         default:
             return [];
@@ -66,6 +67,8 @@ interface AddEventModalProps {
 
 export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalProps) {
     const { token } = useAuth();
+    const t = useTranslations('AddEventModal');
+    const tEvents = useTranslations('Events');
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     const [isOpen, setIsOpen] = useState(false);
@@ -113,7 +116,7 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || "Échec de l'ajout de l'événement");
+                throw new Error(errorData.detail || t('error'));
             }
 
             onSuccess();
@@ -126,8 +129,8 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
             setCritical(false);
             setDate(new Date().toISOString().slice(0, 16));
         } catch (error: any) {
-            console.error("Échec de l'ajout de l'événement", error);
-            alert(`Erreur: ${error.message}`);
+            console.error(t('error'), error);
+            alert(`${t('error')}: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -139,7 +142,7 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                 onClick={() => setIsOpen(true)}
                 className="rounded-lg bg-brand-secondary px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-all shadow-lg shadow-brand-secondary/20 active:scale-95"
             >
-                + Ajouter un événement
+                {t('button')}
             </button>
         );
     }
@@ -148,7 +151,7 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-slate-900">Nouvel événement</h3>
+                    <h3 className="text-xl font-bold text-slate-900">{t('title')}</h3>
                     <button
                         onClick={() => setIsOpen(false)}
                         className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -163,18 +166,18 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                     {/* Type d'événement - Groupé par catégorie */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Type d'événement
+                            {t('typeLabel')}
                         </label>
                         <select
                             value={type}
                             onChange={(e) => handleTypeChange(e.target.value as EventTypeValue)}
                             className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/10 transition-colors"
                         >
-                            {Object.entries(EVENT_TYPE_CATEGORIES_FR).map(([category, events]) => (
-                                <optgroup key={category} label={category}>
-                                    {events.map((event) => (
-                                        <option key={event.value} value={event.value}>
-                                            {event.label}
+                            {Object.entries(EVENT_CATEGORIES).map(([categoryKey, eventTypes]) => (
+                                <optgroup key={categoryKey} label={tEvents(`categories.${categoryKey}`)}>
+                                    {eventTypes.map((eventType) => (
+                                        <option key={eventType} value={eventType}>
+                                            {tEvents(`types.${eventType}`)}
                                         </option>
                                     ))}
                                 </optgroup>
@@ -185,7 +188,7 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                     {/* Date de l'événement */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Date de l'événement
+                            {t('dateLabel')}
                         </label>
                         <input
                             type="datetime-local"
@@ -196,12 +199,14 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                     </div>
 
                     {/* Dynamic Fields Section */}
-                    {getDynamicFields(type).length > 0 && (
+                    {getDynamicFields(type, t).length > 0 && (
                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-4">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Données Spécifiques ({EVENT_TYPE_CATEGORIES_FR[Object.keys(EVENT_TYPE_CATEGORIES_FR).find(k => EVENT_TYPE_CATEGORIES_FR[k].some(e => e.value === type))!]?.find(e => e.value === type)?.label})</h4>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                {t('specificData', { category: tEvents(`categories.${Object.keys(EVENT_CATEGORIES).find(k => EVENT_CATEGORIES[k].includes(type)) || ''}`) })}
+                            </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {getDynamicFields(type).map((field) => (
-                                    <div key={field.name} className={field.type === 'text' && getDynamicFields(type).length % 2 !== 0 && field.name === getDynamicFields(type)[getDynamicFields(type).length - 1].name ? "md:col-span-2" : ""}>
+                                {getDynamicFields(type, t).map((field) => (
+                                    <div key={field.name} className={field.type === 'text' && getDynamicFields(type, t).length % 2 !== 0 && field.name === getDynamicFields(type, t)[getDynamicFields(type, t).length - 1].name ? "md:col-span-2" : ""}>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">
                                             {field.label}
                                         </label>
@@ -221,12 +226,12 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                     {/* Note */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Note (optionnel)
+                            {t('noteLabel')}
                         </label>
                         <textarea
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                            placeholder="Ajoutez des informations supplémentaires..."
+                            placeholder={t('notePlaceholder')}
                             rows={3}
                             className="block w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/10 transition-colors resize-none"
                         />
@@ -242,8 +247,8 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                             className="h-5 w-5 rounded border-slate-300 text-red-600 focus:ring-red-500 transition-colors cursor-pointer"
                         />
                         <label htmlFor="critical" className="text-sm font-medium text-slate-700 cursor-pointer">
-                            <span className="text-red-600">⚠️ Événement critique</span>
-                            <span className="block text-xs text-slate-500">Marquer cet événement comme nécessitant une attention immédiate</span>
+                            <span className="text-red-600">⚠️ {t('criticalLabel')}</span>
+                            <span className="block text-xs text-slate-500">{t('criticalDesc')}</span>
                         </label>
                     </div>
 
@@ -254,7 +259,7 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                             onClick={() => setIsOpen(false)}
                             className="rounded-lg px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
                         >
-                            Annuler
+                            {t('cancel')}
                         </button>
                         <button
                             type="submit"
@@ -267,10 +272,10 @@ export default function AddEventModal({ shipmentId, onSuccess }: AddEventModalPr
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
-                                    Enregistrement...
+                                    {t('saving')}
                                 </span>
                             ) : (
-                                "Enregistrer"
+                                t('save')
                             )}
                         </button>
                     </div>

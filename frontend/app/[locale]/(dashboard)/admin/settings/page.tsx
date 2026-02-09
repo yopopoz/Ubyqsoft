@@ -8,22 +8,25 @@ import EmailSettings from "@/components/settings/EmailSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import LogisticsSettings from "@/components/settings/LogisticsSettings";
 
-const TABS = [
-    { id: 'cloud', label: 'Cloud & Intégrations', icon: '☁️' },
-    { id: 'logistics', label: 'Logistique & APIs', icon: '🚢' },
-    { id: 'ai', label: 'Intelligence Artificielle', icon: '✨' },
-    { id: 'webhooks', label: 'Webhooks', icon: '🔗' },
-    { id: 'email', label: 'Email & SMTP', icon: '📧' },
-    { id: 'security', label: 'Sécurité & API', icon: '🔒' },
-];
+import { useTranslations } from "next-intl";
 
 export default function AdminSettingsPage() {
+    const t = useTranslations('Settings');
     const [activeTab, setActiveTab] = useState('cloud');
+
+    const TABS = [
+        { id: 'cloud', label: t('tabs.cloud'), icon: '☁️' },
+        { id: 'logistics', label: t('tabs.logistics'), icon: '🚢' },
+        { id: 'ai', label: t('tabs.ai'), icon: '✨' },
+        { id: 'webhooks', label: t('tabs.webhooks'), icon: '🔗' },
+        { id: 'email', label: t('tabs.email'), icon: '📧' },
+        { id: 'security', label: t('tabs.security'), icon: '🔒' },
+    ];
 
     const renderContent = () => {
         switch (activeTab) {
             case 'cloud': return (
-                <Suspense fallback={<div className="p-8 text-center text-slate-500">Chargement des paramètres cloud...</div>}>
+                <Suspense fallback={<div className="p-8 text-center text-slate-500">{t('loading')}</div>}>
                     <CloudSettings />
                 </Suspense>
             );
@@ -39,8 +42,8 @@ export default function AdminSettingsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Paramètres de l'application</h1>
-                <p className="text-slate-500">Gérez les configurations globales et les intégrations système.</p>
+                <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+                <p className="text-slate-500">{t('description')}</p>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">

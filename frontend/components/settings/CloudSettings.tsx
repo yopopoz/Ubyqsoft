@@ -4,8 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/services/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 
 export default function CloudSettings() {
+    const t = useTranslations('Settings.Cloud');
+    const tOne = useTranslations('Settings.OneDrive');
     const searchParams = useSearchParams();
     const router = useRouter();
     const { token } = useAuth();
@@ -64,15 +67,16 @@ export default function CloudSettings() {
                 token
             });
             return true;
+            return true;
         } catch (e) {
-            alert("Erreur de sauvegarde");
+            alert(t('alerts.saveError'));
             return false;
         }
     };
 
     const handleConnect = async () => {
         if (!config.clientId || !config.clientSecret) {
-            alert("Veuillez d'abord configurer le Client ID et le Secret.");
+            alert(t('alerts.configRequired'));
             setShowConfig(true);
             return;
         }
@@ -89,13 +93,13 @@ export default function CloudSettings() {
             window.location.href = res.url;
         } catch (e) {
             console.error(e);
-            alert("Erreur lors de l'initialisation de la connexion");
+            alert(t('alerts.connectError'));
             setIsLoading(false);
         }
     };
 
     const handleDisconnect = async () => {
-        if (confirm("Êtes-vous sûr de vouloir déconnecter le compte Microsoft ?")) {
+        if (confirm(t('confirmDisconnect'))) {
             try {
                 // Remove tokens
                 await apiFetch('/settings/', {
@@ -109,7 +113,7 @@ export default function CloudSettings() {
                 });
                 setIsConnected(false);
             } catch (e) {
-                alert("Erreur lors de la déconnexion");
+                alert(t('alerts.disconnectError'));
             }
         }
     };
@@ -119,28 +123,28 @@ export default function CloudSettings() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h3 className="text-lg font-semibold text-slate-800">Microsoft Cloud</h3>
-                        <p className="text-sm text-slate-500 mt-1">Gérez la connexion avec vos services Azure et Office 365</p>
+                        <h3 className="text-lg font-semibold text-slate-800">{t('title')}</h3>
+                        <p className="text-sm text-slate-500 mt-1">{t('description')}</p>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${isConnected ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
                         }`}>
-                        {isConnected ? "Connecté" : "Déconnecté"}
+                        {isConnected ? t('status.connected') : t('status.disconnected')}
                     </div>
                 </div>
 
                 {/* Configuration Section */}
                 <div className="mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={() => setShowConfig(!showConfig)}>
-                        <h4 className="text-sm font-semibold text-slate-700">Configuration Azure AD App</h4>
+                        <h4 className="text-sm font-semibold text-slate-700">{t('config.title')}</h4>
                         <span className="text-xs text-blue-600 hover:text-blue-800">
-                            {showConfig ? 'Masquer' : 'Modifier les clés'}
+                            {showConfig ? t('config.hide') : t('config.show')}
                         </span>
                     </div>
 
                     {showConfig && (
                         <div className="grid grid-cols-1 gap-4 animate-fadeIn">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Application (Client) ID</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('config.clientId')}</label>
                                 <input
                                     type="text"
                                     value={config.clientId}
@@ -150,7 +154,7 @@ export default function CloudSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Client Secret</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('config.clientSecret')}</label>
                                 <input
                                     type="password"
                                     value={config.clientSecret}
@@ -160,7 +164,7 @@ export default function CloudSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Directory (Tenant) ID</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">{t('config.tenantId')}</label>
                                 <input
                                     type="text"
                                     value={config.tenantId}
@@ -190,7 +194,7 @@ export default function CloudSettings() {
                                     <path d="M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z" />
                                 </svg>
                             )}
-                            Se connecter avec Microsoft
+                            {t('connect')}
                         </button>
                     ) : (
                         <div className="flex items-center justify-between w-full bg-slate-50 p-4 rounded-lg border border-slate-200">
@@ -201,15 +205,14 @@ export default function CloudSettings() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="font-medium text-slate-900">Compte Connecté</p>
-                                    <p className="text-sm text-slate-500">Autorisations actives</p>
+                                    <p className="font-medium text-slate-900">{t('connectedAccount')}</p>
+                                    <p className="text-sm text-slate-500">{t('activePermissions')}</p>
                                 </div>
                             </div>
                             <button
-                                onClick={handleDisconnect}
                                 className="text-red-600 hover:text-red-700 font-medium text-sm px-3 py-2 hover:bg-red-50 rounded-lg transition-colors"
                             >
-                                Déconnecter
+                                {t('disconnect')}
                             </button>
                         </div>
                     )}
@@ -219,14 +222,14 @@ export default function CloudSettings() {
                 {isConnected && <OneDriveSyncConfig token={token} />}
 
                 <div className="mt-8 border-t border-slate-100 pt-6">
-                    <h4 className="text-sm font-semibold text-slate-800 mb-4">Permissions requises</h4>
+                    <h4 className="text-sm font-semibold text-slate-800 mb-4">{t('permissions')}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {['Outlook Mail', 'Calendar', 'OneDrive', 'SharePoint', 'Teams'].map((scope) => (
                             <div key={scope} className="flex items-start gap-3 p-3 rounded-lg border border-slate-100">
                                 <div className={`h-2 w-2 mt-2 rounded-full ${isConnected ? "bg-green-500" : "bg-slate-300"}`} />
                                 <div>
                                     <p className="text-sm font-medium text-slate-700">{scope}</p>
-                                    <p className="text-xs text-slate-500">Lecture et écriture</p>
+                                    <p className="text-xs text-slate-500">{t('readWrite')}</p>
                                 </div>
                             </div>
                         ))}
@@ -238,6 +241,7 @@ export default function CloudSettings() {
 }
 
 function OneDriveSyncConfig({ token }: { token: string | null }) {
+    const t = useTranslations('Settings.OneDrive');
     const [isRealtime, setIsRealtime] = useState(false);
     const [subInfo, setSubInfo] = useState<{ id: string, expirationDateTime: string } | null>(null);
     const [config, setConfig] = useState<Record<string, any>>({});
@@ -285,11 +289,12 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                 token
             });
             setIsRealtime(newState);
+            setIsRealtime(newState);
             loadSubscription();
-            if (newState) alert("Mode temps réel activé !");
-            else alert("Mode temps réel désactivé.");
+            if (newState) alert(t('alerts.realtimeEnabled'));
+            else alert(t('alerts.realtimeDisabled'));
         } catch (e) {
-            alert("Erreur lors du changement de mode");
+            alert(t('alerts.modeError'));
         }
     };
 
@@ -301,8 +306,9 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
             const data = await apiFetch<any[]>('/sync/onedrive/files', { token });
             setFiles(data);
             setIsSelecting(true);
+            setIsSelecting(true);
         } catch (e) {
-            alert("Erreur chargement fichiers OneDrive");
+            alert(t('alerts.loadError'));
         } finally {
             setIsLoadingFiles(false);
         }
@@ -318,9 +324,9 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
             });
             setConfig({ ...config, file_id: file.id, file_name: file.name });
             setIsSelecting(false);
-            alert("Fichier maître configuré !");
+            alert(t('alerts.configSaved'));
         } catch (e) {
-            alert("Erreur sauvegarde config");
+            alert(t('alerts.configSaveError'));
         }
     };
 
@@ -331,10 +337,10 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                 method: 'POST',
                 token
             });
-            alert(`Synchro terminée !\nCréés: ${res.created}\nMis à jour: ${res.updated}\nIgnorés: ${res.skipped}\nErreurs: ${res.errors.length}`);
+            alert(t('successSync', { created: res.created, updated: res.updated, skipped: res.skipped, errors: res.errors.length }));
             loadConfig(); // Reload last_run
         } catch (e) {
-            alert("Erreur lors de la synchronisation");
+            alert(t('alerts.syncError'));
         } finally {
             setIsSyncing(false);
         }
@@ -342,13 +348,13 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
 
     return (
         <div className="mt-8 pt-6 border-t border-slate-100">
-            <h4 className="text-lg font-semibold text-slate-800 mb-4">Synchronisation OneDrive</h4>
+            <h4 className="text-lg font-semibold text-slate-800 mb-4">{t('title')}</h4>
 
             {config.file_id ? (
                 <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-medium text-slate-500">Fichier Maître</p>
+                            <p className="text-sm font-medium text-slate-500">{t('masterFile')}</p>
                             <div className="flex items-center gap-2 mt-1">
                                 <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -358,7 +364,7 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                             </div>
                             {config.last_run && (
                                 <p className="text-xs text-slate-400 mt-2">
-                                    Dernière synchro : {new Date(config.last_run).toLocaleString()}
+                                    {t('lastSync', { date: new Date(config.last_run).toLocaleString() })}
                                 </p>
                             )}
 
@@ -367,11 +373,11 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" className="sr-only peer" checked={isRealtime} onChange={toggleRealtime} />
                                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span className="ml-3 text-sm font-medium text-slate-700">Mode Temps Réel</span>
+                                    <span className="ml-3 text-sm font-medium text-slate-700">{t('realtime')}</span>
                                 </label>
                                 {isRealtime && subInfo?.expirationDateTime && (
                                     <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
-                                        Actif (Expire: {new Date(subInfo.expirationDateTime).toLocaleDateString()})
+                                        {t('active', { date: new Date(subInfo.expirationDateTime).toLocaleDateString() })}
                                     </span>
                                 )}
                             </div>
@@ -381,7 +387,7 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                             <button
                                 onClick={loadFiles}
                                 className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
-                                title="Changer de fichier"
+                                title={t('changeFile')}
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -402,7 +408,7 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
                                 )}
-                                Synchroniser
+                                {t('sync')}
                             </button>
                         </div>
                     </div>
@@ -414,14 +420,14 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
                     </div>
-                    <h5 className="text-sm font-medium text-slate-900">Aucun fichier configuré</h5>
-                    <p className="text-sm text-slate-500 mb-4">Sélectionnez un fichier Excel sur votre OneDrive pour activer la synchronisation.</p>
+                    <h5 className="text-sm font-medium text-slate-900">{t('noFile')}</h5>
+                    <p className="text-sm text-slate-500 mb-4">{t('selectFileDesc')}</p>
                     <button
                         onClick={loadFiles}
                         disabled={isLoadingFiles}
                         className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors inlin-flex items-center gap-2"
                     >
-                        {isLoadingFiles ? "Chargement..." : "Sélectionner un fichier"}
+                        {isLoadingFiles ? t('loading') : t('selectFileBtn')}
                     </button>
                 </div>
             )}
@@ -430,12 +436,12 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
             {isSelecting && (
                 <div className="mt-4 border rounded-lg overflow-hidden border-slate-200 animate-fadeIn">
                     <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                        <span className="font-medium text-sm text-slate-700">Fichiers Excel récents</span>
+                        <span className="font-medium text-sm text-slate-700">{t('recentFiles')}</span>
                         <button onClick={() => setIsSelecting(false)} className="text-slate-400 hover:text-slate-600">×</button>
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                         {files.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-slate-500">Aucun fichier .xlsx trouvé</div>
+                            <div className="p-4 text-center text-sm text-slate-500">{t('noFilesFound')}</div>
                         ) : (
                             files.map((f) => (
                                 <div

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { shipmentService } from "@/services/shipmentService";
 import { Shipment } from "@/types/shipment";
@@ -9,25 +9,28 @@ import { EventType } from "@/types/event";
 import { getStatusColor, formatEventType, getStatusVariant } from "@/types/index";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { useTranslations } from "next-intl";
 
 // Helper for relative timestamps
-function getTimeAgo(dateString: string | null | undefined) {
+// Helper for relative timestamps
+function getTimeAgo(dateString: string | null | undefined, t: any) {
     if (!dateString) return "-";
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return "Aujourd'hui";
-    if (diffDays === 1) return "Demain";
-    if (diffDays === -1) return "Hier";
-    if (diffDays > 0 && diffDays < 7) return `Dans ${diffDays} jours`;
-    if (diffDays < 0 && diffDays > -7) return `Il y a ${Math.abs(diffDays)} jours`;
+    if (diffDays === 0) return t('today');
+    if (diffDays === 1) return t('tomorrow');
+    if (diffDays === -1) return t('yesterday');
+    if (diffDays > 0 && diffDays < 7) return t('inDays', { days: diffDays });
+    if (diffDays < 0 && diffDays > -7) return t('daysAgo', { days: Math.abs(diffDays) });
 
-    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    return date.toLocaleDateString();
 }
 
 export default function ShipmentsTable() {
+    const t = useTranslations('ShipmentsTable');
     const [shipments, setShipments] = useState<Shipment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -91,7 +94,7 @@ export default function ShipmentsTable() {
             console.error(err);
             // 401 is handled globally by AuthContext now
             if (err?.status !== 401) {
-                setError("Impossible de charger les expéditions.");
+                setError(t('errorLoad'));
             }
         } finally {
             setLoading(false);
@@ -112,7 +115,7 @@ export default function ShipmentsTable() {
         );
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-400 animate-pulse">Chargement des données...</div>;
+    if (loading) return <div className="p-8 text-center text-slate-400 animate-pulse">{t('loadingData')}</div>;
     if (error) return <div className="p-8 text-center text-status-error">{error}</div>;
 
     return (
@@ -127,12 +130,12 @@ export default function ShipmentsTable() {
                         <svg className="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 01-2 2h2a2 2 0 012-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 01-2 2h2a2 2 0 012-2M9 7a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
-                        Colonnes
+                        {t('columns')}
                     </button>
 
                     {showColumnSelector && (
                         <div className="absolute right-0 mt-2 w-48 bg-white border border-surface-3 shadow-lg rounded-lg p-2 z-50 animate-scale-in">
-                            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-2">Affichage</div>
+                            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-2">{t('display')}</div>
                             {Object.keys(visibleColumns).map((col) => (
                                 <label key={col} className="flex items-center px-2 py-1.5 hover:bg-surface-1 rounded cursor-pointer">
                                     <input
@@ -141,7 +144,7 @@ export default function ShipmentsTable() {
                                         onChange={() => handleToggleColumn(col as keyof typeof visibleColumns)}
                                         className="rounded border-slate-300 text-brand-primary focus:ring-brand-primary mr-2"
                                     />
-                                    <span className="text-sm capitalize text-slate-700">{col.replace(/_/g, ' ')}</span>
+                                    <span className="text-sm capitalize text-slate-700">{t(col)}</span>
                                 </label>
                             ))}
                         </div>
@@ -154,17 +157,17 @@ export default function ShipmentsTable() {
                 <table className="min-w-full w-max">
                     <thead className="bg-surface-1 border-b border-surface-2">
                         <tr>
-                            {visibleColumns.reference && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Référence</th>}
-                            {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Statut</th>}
-                            {visibleColumns.route && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Trajet</th>}
-                            {visibleColumns.dates && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">ETD / ETA</th>}
-                            {visibleColumns.mad_its && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">MAD / ITS</th>}
-                            {visibleColumns.vessel && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Navire</th>}
-                            {visibleColumns.forwarder_ref && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Ref Transitaddy</th>}
-                            {visibleColumns.incoterm && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Incoterm</th>}
-                            {visibleColumns.sku && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">SKU</th>}
-                            {visibleColumns.quantity && <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qté</th>}
-                            <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-surface-1 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">Action</th>
+                            {visibleColumns.reference && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('reference')}</th>}
+                            {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('status')}</th>}
+                            {visibleColumns.route && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('route')}</th>}
+                            {visibleColumns.dates && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('dates')}</th>}
+                            {visibleColumns.mad_its && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('mad_its')}</th>}
+                            {visibleColumns.vessel && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('vessel')}</th>}
+                            {visibleColumns.forwarder_ref && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('forwarder_ref')}</th>}
+                            {visibleColumns.incoterm && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('incoterm')}</th>}
+                            {visibleColumns.sku && <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('sku')}</th>}
+                            {visibleColumns.quantity && <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{t('quantity')}</th>}
+                            <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-surface-1 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">{t('action')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-2">
@@ -200,12 +203,12 @@ export default function ShipmentsTable() {
                                     <td className="px-4 py-3 whitespace-nowrap">
                                         <div className="flex flex-col text-xs gap-0.5">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-slate-400 w-6 text-[10px] uppercase">Dep</span>
-                                                <span className="text-slate-700 font-medium">{getTimeAgo(shipment.planned_etd)}</span>
+                                                <span className="text-slate-400 w-6 text-[10px] uppercase">{t('dep')}</span>
+                                                <span className="text-slate-700 font-medium">{getTimeAgo(shipment.planned_etd, t)}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-slate-400 w-6 text-[10px] uppercase">Arr</span>
-                                                <span className="text-slate-700 font-medium">{getTimeAgo(shipment.planned_eta)}</span>
+                                                <span className="text-slate-400 w-6 text-[10px] uppercase">{t('arr')}</span>
+                                                <span className="text-slate-700 font-medium">{getTimeAgo(shipment.planned_eta, t)}</span>
                                             </div>
                                         </div>
                                     </td>
@@ -256,7 +259,7 @@ export default function ShipmentsTable() {
                                 )}
                                 <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-medium sticky right-0 bg-white group-hover:bg-slate-50/50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] transition-colors">
                                     <Link href={`/shipment/${shipment.id}`} className="p-1.5 rounded-lg text-slate-400 hover:text-brand-secondary hover:bg-brand-secondary/5 transition-all inline-flex items-center justify-center">
-                                        <span className="sr-only">Voir</span>
+                                        <span className="sr-only">{t('view')}</span>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                                         </svg>
@@ -268,7 +271,7 @@ export default function ShipmentsTable() {
                 </table>
                 {shipments.length === 0 && (
                     <div className="p-12 text-center text-slate-500">
-                        Aucune expédition trouvée.
+                        {t('noShipments')}
                     </div>
                 )}
             </div>
@@ -288,18 +291,18 @@ export default function ShipmentsTable() {
 
                             <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 mb-3 bg-surface-1 p-2 rounded-lg">
                                 <div>
-                                    <span className="text-xs text-slate-400 block">Origine</span>
+                                    <span className="text-xs text-slate-400 block">{t('origin')}</span>
                                     {shipment.origin?.split(',')[0]}
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-xs text-slate-400 block">Destination</span>
+                                    <span className="text-xs text-slate-400 block">{t('destination')}</span>
                                     {shipment.destination?.split(',')[0]}
                                 </div>
                             </div>
 
                             <div className="flex justify-between items-center text-xs text-slate-500 border-t border-surface-2 pt-2 mt-2">
-                                <span>ETA: {getTimeAgo(shipment.planned_eta)}</span>
-                                <span className="text-brand-secondary font-medium">Voir détails</span>
+                                <span>ETA: {getTimeAgo(shipment.planned_eta, t)}</span>
+                                <span className="text-brand-secondary font-medium">{t('viewDetails')}</span>
                             </div>
                         </Link>
                     </Card>

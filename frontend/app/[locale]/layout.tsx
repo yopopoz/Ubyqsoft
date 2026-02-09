@@ -1,7 +1,10 @@
+
 import type { Metadata } from "next";
 import { Gruppo } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 const gruppo = Gruppo({
   subsets: ["latin"],
@@ -14,15 +17,22 @@ export const metadata: Metadata = {
   description: "Tableau de bord logistique mondiale",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
+  const messages = await getMessages();
+
   return (
-    <html lang="fr" className={gruppo.variable}>
+    <html lang={locale} className={gruppo.variable}>
       <body className={`${gruppo.className} antialiased`} suppressHydrationWarning>
-        <AuthProvider>{children}</AuthProvider>
+        <NextIntlClientProvider messages={messages}>
+          <AuthProvider>{children}</AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

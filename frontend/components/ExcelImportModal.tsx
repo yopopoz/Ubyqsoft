@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/services/api';
+import { useTranslations } from 'next-intl';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -44,8 +45,9 @@ interface ExcelImportModalProps {
 
 export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelImportModalProps) {
     const { token } = useAuth();
+    const t = useTranslations('Import');
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+
     // State
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -102,7 +104,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                 setFile(droppedFile);
                 setError(null);
             } else {
-                setError('Format invalide. Seuls les fichiers .xlsx et .xls sont acceptés.');
+                setError(t('invalidFormat'));
             }
         }
     }, []);
@@ -116,7 +118,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                 setFile(selectedFile);
                 setError(null);
             } else {
-                setError('Format invalide. Seuls les fichiers .xlsx et .xls sont acceptés.');
+                setError(t('invalidFormat'));
             }
         }
     };
@@ -142,14 +144,14 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Erreur lors de l\'aperçu');
+                throw new Error(errorData.detail || t('errors.preview'));
             }
 
             const data: ImportPreviewResult = await response.json();
             setPreview(data);
             setStep('preview');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erreur inconnue');
+            setError(err instanceof Error ? err.message : t('errors.unknown'));
         } finally {
             setIsLoading(false);
         }
@@ -177,7 +179,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Erreur lors de l\'import');
+                throw new Error(errorData.detail || t('errors.import'));
             }
 
             const data: ImportResult = await response.json();
@@ -185,7 +187,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
             setStep('result');
             if (onSuccess) onSuccess();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erreur inconnue');
+            setError(err instanceof Error ? err.message : t('errors.unknown'));
         } finally {
             setIsLoading(false);
         }
@@ -195,7 +197,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div 
+            <div
                 className="relative w-full max-w-4xl max-h-[90vh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -207,9 +209,9 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                         </div>
-                        <h2 className="text-xl font-semibold text-white">Import Excel</h2>
+                        <h2 className="text-xl font-semibold text-white">{t('title')}</h2>
                     </div>
-                    <button 
+                    <button
                         onClick={handleClose}
                         className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
                     >
@@ -240,10 +242,10 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`
                                     relative p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300
-                                    ${isDragging 
-                                        ? 'border-emerald-400 bg-emerald-500/10' 
-                                        : file 
-                                            ? 'border-emerald-500/50 bg-emerald-500/5' 
+                                    ${isDragging
+                                        ? 'border-emerald-400 bg-emerald-500/10'
+                                        : file
+                                            ? 'border-emerald-500/50 bg-emerald-500/5'
                                             : 'border-slate-600 hover:border-slate-500 bg-slate-800/30'}
                                 `}
                             >
@@ -254,7 +256,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                     onChange={handleFileChange}
                                     className="hidden"
                                 />
-                                
+
                                 <div className="flex flex-col items-center gap-4">
                                     {file ? (
                                         <>
@@ -279,10 +281,10 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-white font-medium">
-                                                    Glissez-déposez votre fichier Excel ici
+                                                    {t('dragDrop')}
                                                 </p>
                                                 <p className="text-slate-400 text-sm mt-1">
-                                                    ou cliquez pour sélectionner (.xlsx, .xls)
+                                                    {t('clickSelect')}
                                                 </p>
                                             </div>
                                         </>
@@ -292,44 +294,40 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
 
                             {/* Mode selector */}
                             <div className="space-y-3">
-                                <label className="text-sm text-slate-300 font-medium">Mode d'import</label>
+                                <label className="text-sm text-slate-300 font-medium">{t('mode')}</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <button
                                         onClick={() => setMode('update_or_create')}
-                                        className={`p-4 rounded-xl border transition-all ${
-                                            mode === 'update_or_create'
-                                                ? 'border-emerald-500 bg-emerald-500/10'
-                                                : 'border-slate-600 hover:border-slate-500 bg-slate-800/30'
-                                        }`}
+                                        className={`p-4 rounded-xl border transition-all ${mode === 'update_or_create'
+                                            ? 'border-emerald-500 bg-emerald-500/10'
+                                            : 'border-slate-600 hover:border-slate-500 bg-slate-800/30'
+                                            }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-4 h-4 rounded-full border-2 ${
-                                                mode === 'update_or_create' ? 'border-emerald-500 bg-emerald-500' : 'border-slate-500'
-                                            }`} />
+                                            <div className={`w-4 h-4 rounded-full border-2 ${mode === 'update_or_create' ? 'border-emerald-500 bg-emerald-500' : 'border-slate-500'
+                                                }`} />
                                             <div className="text-left">
-                                                <p className="text-white font-medium">Mettre à jour ou créer</p>
+                                                <p className="text-white font-medium">{t('updateOrCreate')}</p>
                                                 <p className="text-slate-400 text-xs mt-1">
-                                                    Met à jour si existe, crée sinon (recommandé)
+                                                    {t('updateOrCreateDesc')}
                                                 </p>
                                             </div>
                                         </div>
                                     </button>
                                     <button
                                         onClick={() => setMode('create_only')}
-                                        className={`p-4 rounded-xl border transition-all ${
-                                            mode === 'create_only'
-                                                ? 'border-blue-500 bg-blue-500/10'
-                                                : 'border-slate-600 hover:border-slate-500 bg-slate-800/30'
-                                        }`}
+                                        className={`p-4 rounded-xl border transition-all ${mode === 'create_only'
+                                            ? 'border-blue-500 bg-blue-500/10'
+                                            : 'border-slate-600 hover:border-slate-500 bg-slate-800/30'
+                                            }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-4 h-4 rounded-full border-2 ${
-                                                mode === 'create_only' ? 'border-blue-500 bg-blue-500' : 'border-slate-500'
-                                            }`} />
+                                            <div className={`w-4 h-4 rounded-full border-2 ${mode === 'create_only' ? 'border-blue-500 bg-blue-500' : 'border-slate-500'
+                                                }`} />
                                             <div className="text-left">
-                                                <p className="text-white font-medium">Créer seulement</p>
+                                                <p className="text-white font-medium">{t('createOnly')}</p>
                                                 <p className="text-slate-400 text-xs mt-1">
-                                                    Ignore les références existantes
+                                                    {t('createOnlyDesc')}
                                                 </p>
                                             </div>
                                         </div>
@@ -346,15 +344,15 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
                                     <p className="text-emerald-400 text-2xl font-bold">{preview.new_count}</p>
-                                    <p className="text-emerald-300/70 text-sm">Nouvelles</p>
+                                    <p className="text-emerald-300/70 text-sm">{t('stats.new')}</p>
                                 </div>
                                 <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
                                     <p className="text-blue-400 text-2xl font-bold">{preview.update_count}</p>
-                                    <p className="text-blue-300/70 text-sm">Mises à jour</p>
+                                    <p className="text-blue-300/70 text-sm">{t('stats.updates')}</p>
                                 </div>
                                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
                                     <p className="text-red-400 text-2xl font-bold">{preview.error_count}</p>
-                                    <p className="text-red-300/70 text-sm">Erreurs</p>
+                                    <p className="text-red-300/70 text-sm">{t('stats.errors')}</p>
                                 </div>
                             </div>
 
@@ -364,11 +362,11 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                     <table className="w-full text-sm">
                                         <thead className="bg-slate-800/80 sticky top-0">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">Ligne</th>
-                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">Référence</th>
-                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">Client</th>
-                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">N° Commande</th>
-                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">Statut</th>
+                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">{t('table.row')}</th>
+                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">{t('table.reference')}</th>
+                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">{t('table.customer')}</th>
+                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">{t('table.order')}</th>
+                                                <th className="px-4 py-3 text-left text-slate-300 font-medium">{t('table.status')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-700/50">
@@ -379,14 +377,13 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                                     <td className="px-4 py-3 text-slate-300">{row.customer || '-'}</td>
                                                     <td className="px-4 py-3 text-slate-300">{row.order_number || '-'}</td>
                                                     <td className="px-4 py-3">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                            row.status === 'new' 
-                                                                ? 'bg-emerald-500/20 text-emerald-400' 
-                                                                : row.status === 'update'
-                                                                    ? 'bg-blue-500/20 text-blue-400'
-                                                                    : 'bg-red-500/20 text-red-400'
-                                                        }`}>
-                                                            {row.status === 'new' ? 'Nouveau' : row.status === 'update' ? 'Mise à jour' : 'Erreur'}
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.status === 'new'
+                                                            ? 'bg-emerald-500/20 text-emerald-400'
+                                                            : row.status === 'update'
+                                                                ? 'bg-blue-500/20 text-blue-400'
+                                                                : 'bg-red-500/20 text-red-400'
+                                                            }`}>
+                                                            {row.status === 'new' ? t('status.new') : row.status === 'update' ? t('status.update') : t('status.error')}
                                                         </span>
                                                         {row.error && (
                                                             <p className="text-red-400 text-xs mt-1">{row.error}</p>
@@ -399,7 +396,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                 </div>
                                 {preview.total_rows > 50 && (
                                     <div className="px-4 py-2 bg-slate-800/50 text-slate-400 text-sm text-center">
-                                        Affichage des 50 premières lignes sur {preview.total_rows}
+                                        {t('table.showingRows', { total: preview.total_rows })}
                                     </div>
                                 )}
                             </div>
@@ -409,34 +406,33 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                     {/* Step 3: Result */}
                     {step === 'result' && importResult && (
                         <div className="space-y-6">
-                            {/* Success message */}
                             <div className="text-center py-6">
                                 <div className="inline-flex p-4 rounded-full bg-emerald-500/20 mb-4">
                                     <svg className="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-semibold text-white">Import terminé !</h3>
-                                <p className="text-slate-400 mt-2">{importResult.total_processed} lignes traitées</p>
+                                <h3 className="text-xl font-semibold text-white">{t('success.title')}</h3>
+                                <p className="text-slate-400 mt-2">{t('success.processed', { count: importResult.total_processed })}</p>
                             </div>
 
                             {/* Stats */}
                             <div className="grid grid-cols-4 gap-4">
                                 <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
                                     <p className="text-emerald-400 text-2xl font-bold">{importResult.created}</p>
-                                    <p className="text-emerald-300/70 text-sm">Créées</p>
+                                    <p className="text-emerald-300/70 text-sm">{t('stats.new')}</p>
                                 </div>
                                 <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-center">
                                     <p className="text-blue-400 text-2xl font-bold">{importResult.updated}</p>
-                                    <p className="text-blue-300/70 text-sm">Mises à jour</p>
+                                    <p className="text-blue-300/70 text-sm">{t('stats.updates')}</p>
                                 </div>
                                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center">
                                     <p className="text-amber-400 text-2xl font-bold">{importResult.skipped}</p>
-                                    <p className="text-amber-300/70 text-sm">Ignorées</p>
+                                    <p className="text-amber-300/70 text-sm">{t('stats.skipped')}</p>
                                 </div>
                                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-center">
                                     <p className="text-red-400 text-2xl font-bold">{importResult.errors.length}</p>
-                                    <p className="text-red-300/70 text-sm">Erreurs</p>
+                                    <p className="text-red-300/70 text-sm">{t('stats.errors')}</p>
                                 </div>
                             </div>
 
@@ -444,7 +440,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                             {importResult.errors.length > 0 && (
                                 <div className="rounded-xl border border-red-500/30 overflow-hidden">
                                     <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/30">
-                                        <h4 className="text-red-400 font-medium">Erreurs détaillées</h4>
+                                        <h4 className="text-red-400 font-medium">{t('errors.title')}</h4>
                                     </div>
                                     <div className="max-h-[200px] overflow-y-auto">
                                         {importResult.errors.map((err, idx) => (
@@ -466,20 +462,19 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                 <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50 bg-slate-800/50">
                     {step === 'upload' && (
                         <>
-                            <button 
+                            <button
                                 onClick={handleClose}
                                 className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                             >
-                                Annuler
+                                {t('buttons.cancel')}
                             </button>
                             <button
                                 onClick={handlePreview}
                                 disabled={!file || isLoading}
-                                className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
-                                    file && !isLoading
-                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600'
-                                        : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                                }`}
+                                className={`px-6 py-2.5 rounded-lg font-medium transition-all ${file && !isLoading
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600'
+                                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                                    }`}
                             >
                                 {isLoading ? (
                                     <span className="flex items-center gap-2">
@@ -487,29 +482,28 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                         </svg>
-                                        Chargement...
+                                        {t('buttons.loading')}
                                     </span>
-                                ) : 'Aperçu'}
+                                ) : t('buttons.preview')}
                             </button>
                         </>
                     )}
 
                     {step === 'preview' && (
                         <>
-                            <button 
+                            <button
                                 onClick={() => setStep('upload')}
                                 className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                             >
-                                ← Retour
+                                ← {t('buttons.back')}
                             </button>
                             <button
                                 onClick={handleImport}
                                 disabled={isLoading || (preview?.error_count === preview?.total_rows)}
-                                className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
-                                    !isLoading && preview?.error_count !== preview?.total_rows
-                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600'
-                                        : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                                }`}
+                                className={`px-6 py-2.5 rounded-lg font-medium transition-all ${!isLoading && preview?.error_count !== preview?.total_rows
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600'
+                                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                                    }`}
                             >
                                 {isLoading ? (
                                     <span className="flex items-center gap-2">
@@ -517,26 +511,26 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                         </svg>
-                                        Import en cours...
+                                        {t('loadingData')}
                                     </span>
-                                ) : 'Confirmer l\'import'}
+                                ) : t('buttons.confirm')}
                             </button>
                         </>
                     )}
 
                     {step === 'result' && (
                         <>
-                            <button 
+                            <button
                                 onClick={reset}
                                 className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                             >
-                                Nouvel import
+                                {t('buttons.newImport')}
                             </button>
                             <button
                                 onClick={handleClose}
                                 className="px-6 py-2.5 rounded-lg font-medium bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 transition-all"
                             >
-                                Fermer
+                                {t('buttons.close')}
                             </button>
                         </>
                     )}

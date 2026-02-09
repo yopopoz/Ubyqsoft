@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface Webhook {
     id: string;
@@ -11,6 +12,7 @@ interface Webhook {
 }
 
 export default function WebhookSettings() {
+    const t = useTranslations('Settings.Webhooks');
     const [webhooks, setWebhooks] = useState<Webhook[]>([
         {
             id: '1',
@@ -28,7 +30,7 @@ export default function WebhookSettings() {
     };
 
     const deleteWebhook = (id: string) => {
-        if (confirm('Supprimer ce webhook ?')) {
+        if (confirm(t('table.confirmDelete'))) {
             setWebhooks(hooks => hooks.filter(h => h.id !== id));
         }
     };
@@ -37,14 +39,14 @@ export default function WebhookSettings() {
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                 <div>
-                    <h3 className="text-lg font-semibold text-slate-800">Webhooks</h3>
-                    <p className="text-sm text-slate-500">Gérez les notifications HTTP vers vos services externes</p>
+                    <h3 className="text-lg font-semibold text-slate-800">{t('title')}</h3>
+                    <p className="text-sm text-slate-500">{t('description')}</p>
                 </div>
                 <button className="bg-brand-primary hover:bg-brand-secondary text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Nouveau Webhook
+                    {t('new')}
                 </button>
             </div>
 
@@ -52,10 +54,10 @@ export default function WebhookSettings() {
                 <table className="min-w-full divide-y divide-slate-200">
                     <thead className="bg-slate-50">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">URL du Endpoint</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Événements</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Statut</th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('table.endpoint')}</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('table.events')}</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('table.status')}</th>
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t('table.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-200">
@@ -63,7 +65,7 @@ export default function WebhookSettings() {
                             <tr key={hook.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-slate-900">{hook.url}</div>
-                                    <div className="text-xs text-slate-500">Dernier appel: {hook.lastTriggered || 'Jamais'}</div>
+                                    <div className="text-xs text-slate-500">Dernier appel: {hook.lastTriggered || t('table.never')}</div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-wrap gap-2">
@@ -87,7 +89,7 @@ export default function WebhookSettings() {
                                         onClick={() => deleteWebhook(hook.id)}
                                         className="text-red-600 hover:text-red-900 transition-colors"
                                     >
-                                        Supprimer
+                                        {t('table.delete')}
                                     </button>
                                 </td>
                             </tr>

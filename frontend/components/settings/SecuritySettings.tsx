@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function SecuritySettings() {
+    const t = useTranslations('Settings.Security');
     const [apiKeys, setApiKeys] = useState([
         { id: '1', name: 'Mobile App Prod', prefix: 'pk_live_...', created: '2023-10-15', lastUsed: 'Il y a 2 minutes' },
         { id: '2', name: 'Partner Integration', prefix: 'pk_live_...', created: '2023-11-01', lastUsed: 'Il y a 2 jours' },
@@ -13,11 +15,11 @@ export default function SecuritySettings() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h3 className="text-lg font-semibold text-slate-800">Clés API</h3>
-                        <p className="text-sm text-slate-500">Gérez les clés d'accès pour les applications externes</p>
+                        <h3 className="text-lg font-semibold text-slate-800">{t('title')}</h3>
+                        <p className="text-sm text-slate-500">{t('description')}</p>
                     </div>
                     <button className="bg-brand-primary hover:bg-brand-secondary text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                        Générer une clé
+                        {t('generate')}
                     </button>
                 </div>
 
@@ -30,13 +32,15 @@ export default function SecuritySettings() {
                                     <code className="bg-white px-2 py-0.5 rounded border border-slate-200 text-xs font-mono text-slate-600">
                                         {key.prefix}****************
                                     </code>
-                                    <span className="text-xs text-slate-500">Créée le {key.created}</span>
+                                    <span className="text-xs text-slate-500">{t('created', { date: key.created })}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <span className="text-xs text-slate-500">Dernier usage: {key.lastUsed}</span>
+                                <span className="text-xs text-slate-500">
+                                    {key.lastUsed.startsWith('Il y a') ? key.lastUsed : t('lastUsed', { time: key.lastUsed })}
+                                </span>
                                 <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                                    Révoquer
+                                    {t('revoke')}
                                 </button>
                             </div>
                         </div>
