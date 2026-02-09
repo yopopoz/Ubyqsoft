@@ -109,18 +109,28 @@ CONFORMITÉ:
 - "non conforme", "non-compliant", "rejected", "rejeté" → compliance_status contient 'NON' ou 'REJECT'
 
 === RÈGLES SQL ===
-- Pour chercher X: WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%'
+- PRIORITÉ SKU: Si la recherche ressemble à un code produit, chercher d'abord dans la colonne 'sku'.
+- Pour chercher X général: WHERE (sku ILIKE '%X%' OR reference ILIKE '%X%' OR batch_number ILIKE '%X%')
 - Toujours LIMIT 10 sauf si stats/comptage
 - Dates: CURRENT_DATE pour aujourd'hui
 - Intervalle: CURRENT_DATE + INTERVAL '7 days'
 
 === TEMPLATES - RECHERCHE & STATUT ===
 
+Q: Où est mon article X / SKU X / produit X
+SQL: SELECT reference, sku, batch_number, status, quantity, planned_eta FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
+
+Q: statut du SKU X / info sur article X
+SQL: SELECT reference, sku, status, planned_eta, vessel, container_number FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
+
+Q: Quantité pour SKU X
+SQL: SELECT reference, sku, quantity, status FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
+
 Q: où est ma commande X / statut X / position X / suivi X
-SQL: SELECT reference, batch_number, status, planned_eta, vessel, destination FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
+SQL: SELECT reference, batch_number, sku, status, planned_eta, vessel, destination FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' OR sku ILIKE '%X%' LIMIT 5;
 
 Q: statut détaillé X / tout sur commande X / détails X
-SQL: SELECT reference, batch_number, status, customer, origin, destination, planned_etd, planned_eta, vessel, container_number, transport_mode, incoterm FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
+SQL: SELECT reference, batch_number, sku, status, customer, origin, destination, planned_etd, planned_eta, vessel, container_number, transport_mode, incoterm FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' OR sku ILIKE '%X%' LIMIT 5;
 
 Q: chercher lot X / numéro de lot X
 SQL: SELECT reference, batch_number, status, customer, planned_eta FROM shipments WHERE batch_number ILIKE '%X%' LIMIT 10;
@@ -670,12 +680,24 @@ class ChatbotEngine:
         
         self.llm = ChatGroq(
             api_key=groq_api_key,
-            model="meta-llama/llama-4-scout-17b-16e-instruct",  # 500K TPD limit (vs 100K for Llama3-70b)
+            model="meta-llama/llama-4-scout-17b-16e-instruct",  # 30K context
             temperature=0,
-            max_tokens=500,
+            max_tokens=250,
         )
         
-        self.sql_prompt = PromptTemplate.from_template(SQL_PROMPT)
+        # Client specific filtering
+        user_name = self.user.name or ""
+        user_email = self.user.email or ""
+        # Check if demo account (case insensitive)
+        is_demo = "demo" in user_name.lower() or "demo" in user_email.lower()
+        
+        final_prompt = SQL_PROMPT
+        if self.user.role == "client" and not is_demo:
+            # Inject strict filtering instruction
+            client_filter = f"\n\nIMPORTANT: L'utilisateur est le client '{user_name}'. Tu DOIS ajouter 'AND customer ILIKE ''%{user_name}%''' à toutes les clauses WHERE pour filtrer les résultats. Ne montre JAMAIS de données d'autres clients."
+            final_prompt = SQL_PROMPT + client_filter
+        
+        self.sql_prompt = PromptTemplate.from_template(final_prompt)
         self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
     
     def _validate_sql(self, sql: str) -> tuple[bool, str]:
