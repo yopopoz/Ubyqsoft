@@ -43,19 +43,20 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex font-sans">
+        <div className="min-h-screen flex font-sans selection:bg-[#D30026] selection:text-white">
             {/* Left Panel - Branding (Premium White) */}
-            <div className="hidden lg:flex lg:w-1/2 bg-[#F8FAFC] relative overflow-hidden flex-col items-center justify-center text-slate-900 border-r border-slate-200">
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:32px_32px]" />
+            <div className="hidden lg:flex lg:w-1/2 bg-[#F8FAFC] relative overflow-hidden flex-col items-center justify-center text-slate-900 border-r border-slate-100">
+                {/* Background Pattern - Subtle & Premium */}
+                <div className="absolute inset-0 opacity-[0.03] bg-[url('/grid.svg')] bg-center" />
+                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:40px_40px]" />
 
-                {/* Red Accent Lines */}
-                <div className="absolute top-0 left-0 w-1/3 h-1 bg-[#D30026]" />
-                <div className="absolute bottom-0 right-0 w-full h-1 bg-[#D30026]" />
+                {/* Elegant Accents */}
+                <div className="absolute top-0 left-0 w-1/4 h-1.5 bg-[#D30026]" />
+                <div className="absolute bottom-0 right-0 w-1/4 h-1.5 bg-[#D30026]" />
 
                 {/* Content */}
-                <div className="relative z-10 flex flex-col justify-center px-16 items-center text-center max-w-xl">
-                    <div className="mb-12 relative w-64 h-24">
+                <div className="relative z-10 flex flex-col justify-center px-20 items-center text-center">
+                    <div className="mb-20 relative w-96 h-32 transition-transform duration-700 hover:scale-105">
                         <Image
                             src="/logo.png"
                             alt="PURE TRADE"
@@ -66,43 +67,22 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <h1 className="text-4xl font-light tracking-widest mb-2 uppercase">
-                        PROJET D'EXCEPTION
-                    </h1>
-                    <h1 className="text-4xl font-bold tracking-widest mb-8 text-[#D30026] uppercase">
-                        SOLUTION D'EXCEPTION
-                    </h1>
-
-                    <p className="text-slate-500 mb-12 text-lg font-light leading-relaxed">
-                        Plateforme de gestion unifiée pour vos opérations de transport international.
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-6 w-full">
-                        <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm text-left hover:border-[#D30026]/50 transition-colors">
-                            <div className="h-10 w-10 rounded-lg bg-[#D30026] text-white flex items-center justify-center mb-4">
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-slate-900 mb-1">Temps Réel</h3>
-                            <p className="text-slate-500 text-sm">Suivi précis des conteneurs</p>
-                        </div>
-                        <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm text-left hover:border-[#D30026]/50 transition-colors">
-                            <div className="h-10 w-10 rounded-lg bg-slate-800 text-white flex items-center justify-center mb-4">
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-slate-900 mb-1">Analytics</h3>
-                            <p className="text-slate-500 text-sm">Performance par transporteur</p>
-                        </div>
+                    <div className="space-y-6 animate-slide-up">
+                        <h1 className="text-3xl lg:text-4xl font-light tracking-[0.25em] text-slate-600 uppercase">
+                            PROJET D'EXCEPTION
+                        </h1>
+                        <h1 className="text-3xl lg:text-4xl font-bold tracking-[0.25em] text-[#D30026] uppercase">
+                            SOLUTION D'EXCEPTION
+                        </h1>
                     </div>
+
+                    <div className="mt-24 w-16 h-1 bg-slate-200 rounded-full" />
                 </div>
             </div>
 
             {/* Right Panel - Login Form (White) */}
             <div className="flex-1 flex items-center justify-center p-8 bg-white">
-                <div className="w-full max-w-md animate-fade-in bg-white p-10 rounded-2xl shadow-none">
+                <div className="w-full max-w-md animate-fade-in bg-white p-12 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.03)] border border-slate-50">
                     <div className="text-center mb-10">
                         <div className="lg:hidden mb-8 relative w-40 h-16 mx-auto">
                             <Image
