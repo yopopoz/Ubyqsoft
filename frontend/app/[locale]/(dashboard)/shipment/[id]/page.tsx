@@ -93,9 +93,12 @@ function PredictiveInsight({ shipment }: { shipment: Shipment }) {
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-slate-800">{t('aiPrediction')}</h3>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: t.raw('aiPredictionText', { phase: tEvents('types.' + (shipment.status as EventTypeValue)) }) }}
-                    />
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                        {t.rich('aiPredictionText', {
+                            phase: tEvents('types.' + (shipment.status as EventTypeValue)),
+                            strong: (chunks) => <strong>{chunks}</strong>
+                        })}
+                    </p>
                     <button className="text-xs font-semibold text-orange-600 mt-2 hover:underline">{t('viewRecommendations')} &rarr;</button>
                 </div>
             </div>
