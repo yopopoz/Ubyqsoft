@@ -55,8 +55,8 @@ export default function LoginPage() {
                 <div className="absolute bottom-0 right-0 w-1/4 h-1.5 bg-[#D30026]" />
 
                 {/* Content */}
-                <div className="relative z-10 flex flex-col justify-center px-20 items-center text-center">
-                    <div className="mb-20 relative w-96 h-32 transition-transform duration-700 hover:scale-105">
+                <div className="relative z-10 flex flex-col justify-center px-12 items-center text-center w-full max-w-2xl">
+                    <div className="mb-16 relative w-80 h-28 hover:scale-105 transition-transform duration-700">
                         <Image
                             src="/logo.png"
                             alt="PURE TRADE"
@@ -67,22 +67,22 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <div className="space-y-6 animate-slide-up">
-                        <h1 className="text-3xl lg:text-4xl font-light tracking-[0.25em] text-slate-600 uppercase">
+                    <div className="space-y-4 animate-slide-up w-full">
+                        <h1 className="text-xl lg:text-2xl xl:text-3xl font-light tracking-[0.35em] text-slate-500 uppercase whitespace-nowrap">
                             PROJET D'EXCEPTION
                         </h1>
-                        <h1 className="text-3xl lg:text-4xl font-bold tracking-[0.25em] text-[#D30026] uppercase">
+                        <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold tracking-[0.35em] text-[#D30026] uppercase whitespace-nowrap">
                             SOLUTION D'EXCEPTION
                         </h1>
                     </div>
 
-                    <div className="mt-24 w-16 h-1 bg-slate-200 rounded-full" />
+                    <div className="mt-20 w-12 h-1 bg-slate-200 rounded-full" />
                 </div>
             </div>
 
             {/* Right Panel - Login Form (White) */}
-            <div className="flex-1 flex items-center justify-center p-8 bg-white">
-                <div className="w-full max-w-md animate-fade-in bg-white p-12 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.03)] border border-slate-50">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative">
+                <div className="w-full max-w-md animate-fade-in bg-white p-12 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.03)] border border-slate-50 relative z-10">
                     <div className="text-center mb-10">
                         <div className="lg:hidden mb-8 relative w-40 h-16 mx-auto">
                             <Image
@@ -94,7 +94,7 @@ export default function LoginPage() {
                             />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Espace Client</h2>
-                        <p className="text-slate-500 mt-2">Connectez-vous à votre compte Pure Trade</p>
+                        <p className="text-slate-500 mt-2">Connectez-vous à votre compte Pure Track</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -151,9 +151,12 @@ export default function LoginPage() {
                             )}
                         </button>
                     </form>
+                </div>
 
-                    <p className="text-center text-xs text-slate-400 mt-8">
-                        © 2026 Pure Trade. Tous droits réservés.
+                {/* Footer Copyright */}
+                <div className="absolute bottom-8 left-0 right-0 text-center">
+                    <p className="text-xs text-slate-400">
+                        © 2026 Pure Track. Tous droits réservés.
                     </p>
                 </div>
             </div>
