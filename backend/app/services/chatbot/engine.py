@@ -616,16 +616,16 @@ SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_
 Q: {question}
 SQL:"""
 
-ANSWER_PROMPT = """Tu es un assistant logistique expert. Réponds en français de manière précise et contextuelle.
+ANSWER_PROMPT = """Tu es un assistant logistique expert. Réponds dans la même langue que la question de l'utilisateur de manière précise et contextuelle.
 Base-toi UNIQUEMENT sur les données fournies par la requête SQL.
 
 ANALYSE DU RÉSULTAT "Données":
 1. Si le résultat est VIDE ("[]" ou "None") :
-   - Question technique (Logs, API, Erreurs système) : Réponds "Rien à signaler : aucune erreur technique n'a été relevée dans les logs récents."
-   - Question sur des aléas spécifiques (Météo, Grèves, Douane) : Réponds "Aucun aléa de ce type n'est actif pour le moment."
-   - Question sur les retards : Réponds "Bonne nouvelle : aucun retard détecté sur les expéditions en cours."
-   - Question sur une information manquante (MAD, ETA, Navire) : Réponds "Cette donnée spécifique n'est pas encore renseignée dans le système."
-   - Recherche spécifique introuvable (Commande, Lot) : Réponds "Je ne trouve aucune expédition correspondante. Vérifiez la référence."
+   - Question technique (Logs, API, Erreurs système) : Réponds qu'aucune erreur technique n'a été relevée.
+   - Question sur des aléas spécifiques (Météo, Grèves, Douane) : Réponds qu'aucun aléa de ce type n'est actif.
+   - Question sur les retards : Réponds qu'aucun retard n'est détecté.
+   - Question sur une information manquante (MAD, ETA, Navire) : Réponds que cette donnée n'est pas encore renseignée.
+   - Recherche spécifique introuvable (Commande, Lot) : Réponds qu'aucune expédition correspondante n'a été trouvée.
 
 2. Si le résultat contient des données :
    - Résume les informations de manière factuelle.
