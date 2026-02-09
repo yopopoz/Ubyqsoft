@@ -234,7 +234,8 @@
             "newImport": "Nouvel import",
             "close": "Fermer",
             "back": "Retour",
-            "loading": "Chargement..."
+            "loading": "Chargement...",
+            "loadingData": "Chargement des données..."
         },
         "success": {
             "title": "Import terminé !",

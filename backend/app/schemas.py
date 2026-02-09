@@ -169,6 +169,8 @@ class ImportResult(BaseModel):
     created: int
     updated: int
     skipped: int
+    errors: List[ImportResultError] = []
+    total_processed: int = 0
 
 # --- OneDrive Sync ---
 class OneDriveFile(BaseModel):

@@ -234,7 +234,8 @@
             "newImport": "New Import",
             "close": "Close",
             "back": "Back",
-            "loading": "Loading..."
+            "loading": "Loading...",
+            "loadingData": "Loading data..."
         },
         "success": {
             "title": "Import Completed!",
@@ -397,21 +398,6 @@
             "lastUsed": "Last used: {time}",
             "revoke": "Revoke"
         }
-    },
-    "Navigation": {
-        "dashboard": "Dashboard",
-        "shipments": "Shipments",
-        "new_shipment": "New Shipment",
-        "reports": "Reports",
-        "users": "Users",
-        "import": "Import Excel",
-        "settings": "Settings",
-        "role_admin": "Administrator",
-        "role_ops": "Operations",
-        "role_client": "Client",
-        "menu": "MENU",
-        "user_fallback": "User",
-        "logout_title": "Logout"
     },
     "Chatbot": {
         "welcome": "Hello! I am your PURE TRADE logistics assistant. How can I help you today?",
