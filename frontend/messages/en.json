@@ -199,6 +199,7 @@
     },
     "Import": {
         "title": "Import Excel",
+        "loadingData": "Loading data...",
         "open": "Open Import",
         "dragDrop": "Drag and drop your Excel file here",
         "clickSelect": "or click to select (.xlsx, .xls)",
@@ -234,8 +235,7 @@
             "newImport": "New Import",
             "close": "Close",
             "back": "Back",
-            "loading": "Loading...",
-            "loadingData": "Loading data..."
+            "loading": "Loading..."
         },
         "success": {
             "title": "Import Completed!",

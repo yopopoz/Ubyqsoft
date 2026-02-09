@@ -413,7 +413,7 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold text-white">{t('success.title')}</h3>
-                                <p className="text-slate-400 mt-2">{t('success.processed', { count: importResult.total_processed })}</p>
+                                <p className="text-slate-400 mt-2">{t('success.processed', { count: importResult.total_processed || 0 })}</p>
                             </div>
 
                             {/* Stats */}
@@ -431,19 +431,19 @@ export default function ExcelImportModal({ isOpen, onClose, onSuccess }: ExcelIm
                                     <p className="text-amber-300/70 text-sm">{t('stats.skipped')}</p>
                                 </div>
                                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-center">
-                                    <p className="text-red-400 text-2xl font-bold">{importResult.errors.length}</p>
+                                    <p className="text-red-400 text-2xl font-bold">{(importResult.errors || []).length}</p>
                                     <p className="text-red-300/70 text-sm">{t('stats.errors')}</p>
                                 </div>
                             </div>
 
                             {/* Errors list */}
-                            {importResult.errors.length > 0 && (
+                            {(importResult.errors || []).length > 0 && (
                                 <div className="rounded-xl border border-red-500/30 overflow-hidden">
                                     <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/30">
                                         <h4 className="text-red-400 font-medium">{t('errors.title')}</h4>
                                     </div>
                                     <div className="max-h-[200px] overflow-y-auto">
-                                        {importResult.errors.map((err, idx) => (
+                                        {(importResult.errors || []).map((err, idx) => (
                                             <div key={idx} className="px-4 py-2 border-b border-slate-700/30 last:border-0">
                                                 <span className="text-slate-400">Ligne {err.row}</span>
                                                 {err.reference && <span className="text-slate-500 mx-2">|</span>}
