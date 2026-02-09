@@ -399,21 +399,6 @@
             "revoke": "Révoquer"
         }
     },
-    "Navigation": {
-        "dashboard": "Tableau de bord",
-        "shipments": "Expéditions",
-        "new_shipment": "Nouvel envoi",
-        "reports": "Rapports",
-        "users": "Utilisateurs",
-        "import": "Import Excel",
-        "settings": "Paramètres",
-        "role_admin": "Administrateur",
-        "role_ops": "Opérations",
-        "role_client": "Client",
-        "menu": "MENU",
-        "user_fallback": "Utilisateur",
-        "logout_title": "Déconnexion"
-    },
     "Chatbot": {
         "welcome": "Bonjour ! Je suis votre assistant logistique PURE TRADE. Comment puis-je vous aider aujourd'hui ?",
         "error": "Une erreur est survenue lors de la communication avec le serveur.",
