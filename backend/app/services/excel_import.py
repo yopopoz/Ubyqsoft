@@ -221,6 +221,13 @@ def parse_excel(file_content: bytes) -> Tuple[List[Dict[str, Any]], List[str]]:
             # Add origin/destination from loading_place/pod
             row_data['data']['origin'] = _get_value(row, 'Loading Place')
             row_data['data']['destination'] = _get_value(row, 'POD')
+
+            # Status Inference Logic (ON BOARD -> TRANSIT_OCEAN)
+            dep_stat = row_data['data'].get('departure_stat')
+            if dep_stat and isinstance(dep_stat, str) and "ON BOARD" in dep_stat.upper():
+                row_data['data']['status'] = "TRANSIT_OCEAN"
+            elif dep_stat and isinstance(dep_stat, str) and "TRANSIT" in dep_stat.upper():
+                row_data['data']['status'] = "TRANSIT_OCEAN"
             
         except Exception as e:
             row_data['error'] = f"Erreur parsing: {str(e)}"
@@ -296,13 +303,17 @@ def execute_import(
             continue
         
         try:
+            # Status Change Detection & Alert Logic
             if reference in existing_refs:
                 if mode == ImportMode.CREATE_ONLY:
                     skipped += 1
                     continue
+
+                existing = existing_refs[reference]
+                old_status = existing.status
+                new_status = row['data'].get('status')
                 
                 # Update existing (from DB or previously created in this import)
-                existing = existing_refs[reference]
                 data = row['data'].copy()
                 data.pop('reference', None)  # Don't update reference
                 
@@ -310,11 +321,33 @@ def execute_import(
                     if value is not None and hasattr(existing, key):
                         setattr(existing, key, value)
                 
+                # Alert Logic: "Met a jour les alertes eventuelles"
+                # If status changed to TRANSIT_OCEAN (e.g. from ON BOARD), check for delays
+                if new_status == "TRANSIT_OCEAN" and old_status != "TRANSIT_OCEAN":
+                    # Close any "Late for Loading" alerts
+                    for alert in existing.alerts:
+                        if alert.active and "LOADING" in alert.type:
+                             alert.active = False
+                    
+                    # Create new Alert if ETA is in the past
+                    if existing.planned_eta and existing.planned_eta.date() < datetime.now().date():
+                        from ..models import Alert
+                        new_alert = Alert(
+                            shipment_id=existing.id,
+                            type="DELAY",
+                            severity="HIGH",
+                            message=f"Expédition en transit mais ETA dépassée ({existing.planned_eta.strftime('%d/%m/%Y')})",
+                            active=True
+                        )
+                        db.add(new_alert)
+
                 updated += 1
             else:
                 # Create new
                 data = row['data'].copy()
-                data['status'] = 'CREATED'
+                # Status "ON BOARD" -> "TRANSIT_OCEAN" handled in parsing
+                if 'status' not in data:
+                     data['status'] = 'CREATED'
                 data['created_at'] = datetime.now()
                 
                 shipment = Shipment(**data)

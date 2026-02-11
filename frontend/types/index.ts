@@ -62,6 +62,8 @@ export function getStatusColor(status: string | null | undefined): { bg: string;
         TRANSIT_OCEAN: { bg: "bg-brand-secondary/5", text: "text-brand-secondary" },
         TRANSIT_PORT_OF_LOADING: { bg: "bg-brand-secondary/5", text: "text-brand-secondary" },
         TRANSIT_PORT_OF_DISCHARGE: { bg: "bg-brand-secondary/5", text: "text-brand-secondary" },
+        "ON BOARD": { bg: "bg-brand-secondary/5", text: "text-brand-secondary" },
+        "ON_BOARD": { bg: "bg-brand-secondary/5", text: "text-brand-secondary" },
         ARRIVAL_PORT_NYNJ: { bg: "bg-brand-secondary/5", text: "text-brand-secondary" },
         IMPORT_CLEARANCE_CBP: { bg: "bg-slate-100", text: "text-slate-600" },
         CUSTOMS_CLEARANCE: { bg: "bg-amber-50", text: "text-amber-700" },
@@ -77,7 +79,7 @@ export function getStatusVariant(status: string | null | undefined): "neutral" |
     if (status === "FINAL_DELIVERY") return "success";
     if (status === "PROACTIVE_ALERT") return "error";
     if (status === "LOADING_IN_PROGRESS") return "warning";
-    if (status.includes("TRANSIT")) return "brand"; // Changed to brand/primary for transit
+    if (status.includes("TRANSIT") || status.includes("ON BOARD") || status === "ON_BOARD") return "brand"; // Changed to brand/primary for transit
     if (status === "PRODUCTION_READY") return "info";
     return "neutral";
 }

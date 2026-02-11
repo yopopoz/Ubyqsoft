@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
             const total = data.length;
             const delivered = data.filter((s) => s.status === "FINAL_DELIVERY").length;
-            const inTransit = data.filter((s) => s.status && s.status.includes("TRANSIT")).length;
+            const inTransit = data.filter((s) => s.status && (s.status.includes("TRANSIT") || s.status.includes("ON BOARD") || s.status === "ON_BOARD")).length;
             const pending = total - delivered - inTransit;
 
             setStats({ total, inTransit, delivered, pending });
