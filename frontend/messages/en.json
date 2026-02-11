@@ -195,7 +195,16 @@
         "destination": "Destination",
         "viewDetails": "View details",
         "dep": "DEP",
-        "arr": "ARR"
+        "arr": "ARR",
+        "sort": {
+            "button": "Sort by",
+            "reference_asc": "Reference (A-Z)",
+            "reference_desc": "Reference (Z-A)",
+            "created_at_desc": "Most Recent",
+            "created_at_asc": "Oldest",
+            "eta_asc": "ETA (Closest)",
+            "eta_desc": "ETA (Farthest)"
+        }
     },
     "Import": {
         "title": "Import Excel",

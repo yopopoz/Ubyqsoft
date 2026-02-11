@@ -198,10 +198,12 @@
         "arr": "ARR",
         "sort": {
             "button": "Trier par",
-            "reference": "Référence",
-            "created_at": "Date Ajout (Récent)",
-            "etd": "Date Départ (ETD)",
-            "eta": "Date Arrivée (ETA)"
+            "reference_asc": "Référence (A-Z)",
+            "reference_desc": "Référence (Z-A)",
+            "created_at_desc": "Plus récent",
+            "created_at_asc": "Plus ancien",
+            "eta_asc": "ETA (Proche)",
+            "eta_desc": "ETA (Loin)"
         }
     },
     "Import": {

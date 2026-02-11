@@ -171,28 +171,28 @@ export default function ShipmentsTable() {
                             <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 px-2">{t('sort.button')}</div>
 
                             <button onClick={() => handleSort('created_at', 'desc')} className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-surface-1 ${sortConfig.key === 'created_at' && sortConfig.direction === 'desc' ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-slate-700'}`}>
-                                {t('sort.created_at')} (Récent)
+                                {t('sort.created_at_desc')}
                             </button>
                             <button onClick={() => handleSort('created_at', 'asc')} className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-surface-1 ${sortConfig.key === 'created_at' && sortConfig.direction === 'asc' ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-slate-700'}`}>
-                                {t('sort.created_at')} (Ancien)
+                                {t('sort.created_at_asc')}
                             </button>
 
                             <div className="h-px bg-slate-100 my-1"></div>
 
                             <button onClick={() => handleSort('reference', 'asc')} className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-surface-1 ${sortConfig.key === 'reference' && sortConfig.direction === 'asc' ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-slate-700'}`}>
-                                {t('sort.reference')} (A-Z)
+                                {t('sort.reference_asc')}
                             </button>
                             <button onClick={() => handleSort('reference', 'desc')} className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-surface-1 ${sortConfig.key === 'reference' && sortConfig.direction === 'desc' ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-slate-700'}`}>
-                                {t('sort.reference')} (Z-A)
+                                {t('sort.reference_desc')}
                             </button>
 
                             <div className="h-px bg-slate-100 my-1"></div>
 
                             <button onClick={() => handleSort('planned_eta', 'asc')} className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-surface-1 ${sortConfig.key === 'planned_eta' && sortConfig.direction === 'asc' ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-slate-700'}`}>
-                                {t('sort.eta')} (Proche)
+                                {t('sort.eta_asc')}
                             </button>
                             <button onClick={() => handleSort('planned_eta', 'desc')} className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-surface-1 ${sortConfig.key === 'planned_eta' && sortConfig.direction === 'desc' ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-slate-700'}`}>
-                                {t('sort.eta')} (Loin)
+                                {t('sort.eta_desc')}
                             </button>
                         </div>
                     )}
