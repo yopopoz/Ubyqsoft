@@ -149,62 +149,65 @@ export default function SecuritySettings() {
 
                             {createdKey ? (
                                 <div className="space-y-4">
+                                    <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-sm">
                                         Cette clé ne sera affichée qu&apos;une seule fois. Veuillez la copier maintenant.
                                     </div>
+
                                     <div className="relative">
-                                        <pre className="bg-slate-900 text-slate-50 p-3 rounded-lg text-sm font-mono break-all whitespace-pre-wrap">
+                                        <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg text-sm font-mono break-all whitespace-pre-wrap">
                                             {createdKey}
                                         </pre>
                                         <button
                                             onClick={() => navigator.clipboard.writeText(createdKey)}
-                                            className="absolute top-2 right-2 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded"
+                                            className="absolute top-2 right-2 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded transition-colors"
                                         >
                                             Copier
                                         </button>
                                     </div>
-                                    <div className="flex justify-end pt-4">
+
+                                    <div className="flex justify-end pt-2">
                                         <button
                                             onClick={closeCreateModal}
-                                            className="bg-brand-primary text-white px-4 py-2 rounded-lg"
+                                            className="bg-brand-primary hover:bg-brand-secondary text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                                        >
                                             J&apos;ai copié la clé
                                         </button>
                                     </div>
-                    </div>
-                    ) : (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Nom de la clé</label>
-                            <input
-                                type="text"
-                                value={newKeyName}
-                                onChange={(e) => setNewKeyName(e.target.value)}
-                                placeholder="ex: Intégration Zapier"
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                                autoFocus
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3 pt-4">
-                            <button
-                                onClick={() => setShowCreateModal(false)}
-                                className="text-slate-600 hover:text-slate-800 px-4 py-2"
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                onClick={handleCreateKey}
-                                disabled={!newKeyName.trim()}
-                                className="bg-brand-primary disabled:opacity-50 text-white px-4 py-2 rounded-lg"
-                            >
-                                Générer
-                            </button>
-                        </div>
-                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Nom de la clé</label>
+                                        <input
+                                            type="text"
+                                            value={newKeyName}
+                                            onChange={(e) => setNewKeyName(e.target.value)}
+                                            placeholder="ex: Intégration Zapier"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-4">
+                                        <button
+                                            onClick={() => setShowCreateModal(false)}
+                                            className="text-slate-600 hover:text-slate-800 px-4 py-2"
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button
+                                            onClick={handleCreateKey}
+                                            disabled={!newKeyName.trim()}
+                                            className="bg-brand-primary disabled:opacity-50 text-white px-4 py-2 rounded-lg"
+                                        >
+                                            Générer
+                                        </button>
+                                    </div>
+                                </div>
                             )}
-                </div>
+                        </div>
                     </div>
-                </div >
-            )
-}
-        </div >
+                </div>
+            )}
+        </div>
     );
 }
