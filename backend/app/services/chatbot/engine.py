@@ -707,18 +707,18 @@ class ChatbotEngine:
             safe_customer = filter_customer.replace("'", "''")
             
             # Inject strict filtering instruction with smarter SQL handling
+            # TEMP: Force allow L'Oreal and Lancome as requested by user
             filter_instruction = f"""
 
-IMPORTANT: L'utilisateur est restreint au client '{safe_customer}'. 
-Tu DOIS filtrer TOUS les résultats pour ce client.
+IMPORTANT: L'utilisateur est restreint au client '{safe_customer}', MAIS autorisé aussi à voir 'L''Oreal' et 'Lancôme'.
+Tu DOIS filtrer les résultats pour inclure ces clients.
 
 RÈGLES DE RECHERCHE PRIORITAIRES :
 1. Si la recherche contient des chiffres et des lettres (ex: LG791800), c'est probablement un SKU -> cherche d'abord dans la colonne 'sku'.
 
 RÈGLES DE FILTRAGE :
-1. Si la requête a déjà une clause WHERE, ajoute "AND customer ILIKE '%{safe_customer}%'".
-2. Si la requête n'a PAS de clause WHERE, ajoute "WHERE customer ILIKE '%{safe_customer}%'".
-3. Ne montre JAMAIS de données d'autres clients.
+1. Si la requête a déjà une clause WHERE, ajoute "AND (customer ILIKE '%{safe_customer}%' OR customer ILIKE '%L''Oreal%' OR customer ILIKE '%Lancôme%')".
+2. Si la requête n'a PAS de clause WHERE, ajoute "WHERE (customer ILIKE '%{safe_customer}%' OR customer ILIKE '%L''Oreal%' OR customer ILIKE '%Lancôme%')".
 """
             
         final_prompt = SQL_PROMPT + filter_instruction + SQL_PROMPT_SUFFIX
