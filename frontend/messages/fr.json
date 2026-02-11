@@ -195,7 +195,14 @@
         "destination": "Destination",
         "viewDetails": "Voir détails",
         "dep": "DEP",
-        "arr": "ARR"
+        "arr": "ARR",
+        "sort": {
+            "button": "Trier par",
+            "reference": "Référence",
+            "created_at": "Date Ajout (Récent)",
+            "etd": "Date Départ (ETD)",
+            "eta": "Date Arrivée (ETA)"
+        }
     },
     "Import": {
         "title": "Import Excel",
