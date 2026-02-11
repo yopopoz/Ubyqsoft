@@ -23,16 +23,11 @@ export default function EmailSettings() {
             setIsLoading(true);
             try {
                 const data = await apiFetch<Record<string, unknown>>('/settings/', { token });
-                if (data.SMTP_HOST) setHost(data.SMTP_HOST);
-                if (data.SMTP_PORT) setPort(data.SMTP_PORT);
-                if (data.SMTP_SECURITY) setSecurity(data.SMTP_SECURITY);
-                if (data.SMTP_USER) setUser(data.SMTP_USER);
-                // We don't load the password for security, or we load it but don't show it?
-                // Typically passwords aren't returned or are masked.
-                // For this simple implementation, if it returns it (encrypted), we might not want to display it directly.
-                // But the backend `get_all_settings` returns decrypted values if `is_encrypted` logic is simple.
-                // The current backend simplisticly returns everything.
-                if (data.SMTP_PASSWORD) setPassword(data.SMTP_PASSWORD);
+                if (data.SMTP_HOST) setHost(data.SMTP_HOST as string);
+                if (data.SMTP_PORT) setPort(data.SMTP_PORT as string);
+                if (data.SMTP_SECURITY) setSecurity(data.SMTP_SECURITY as string);
+                if (data.SMTP_USER) setUser(data.SMTP_USER as string);
+                if (data.SMTP_PASSWORD) setPassword(data.SMTP_PASSWORD as string);
             } catch (e) {
                 console.error("Failed to load email settings", e);
             } finally {
