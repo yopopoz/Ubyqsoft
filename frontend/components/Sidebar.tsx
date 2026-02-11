@@ -28,7 +28,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
             case "ops":
                 return { bg: "bg-zinc-200", text: "text-black", label: t('role_ops') }; // Subtle for ops
             default:
-                return { bg: "bg-zinc-100", text: "text-zinc-500", label: t('role_client') };
+                return { bg: "bg-zinc-100", text: "text-black", label: t('role_client') };
         }
     };
 
@@ -51,7 +51,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
             {/* Navigation */}
             <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-                <p className="px-4 py-2 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                <p className="px-4 py-2 text-sm font-bold text-zinc-600 uppercase tracking-widest">
                     {t('menu')}
                 </p>
                 {visibleNav.map((item) => {
@@ -64,7 +64,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             href={item.href}
                             className={isActive ? "sidebar-nav-item-active group" : "sidebar-nav-item-inactive group"}
                         >
-                            <span className={`transition-colors duration-200 ${isActive ? "text-black" : "text-zinc-400 group-hover:text-black"}`}>
+                            <span className={`transition-colors duration-200 ${isActive ? "text-black" : "text-zinc-600 group-hover:text-black"}`}>
                                 {item.icon}
                             </span>
                             <span className="font-medium text-sm tracking-wide">{t(item.translationKey)}</span>
@@ -83,7 +83,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         <p className="text-sm font-bold text-black truncate">
                             {user?.sub?.split("@")[0] || t('user_fallback')}
                         </p>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${roleBadge.bg} ${roleBadge.text}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${roleBadge.bg} ${roleBadge.text}`}>
                             {roleBadge.label}
                         </span>
                     </div>

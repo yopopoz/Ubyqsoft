@@ -131,7 +131,7 @@ function ETADisplay({ eta, status }: { eta?: string | Date | null, status: strin
 function InfoItem({ label, value, icon, mono }: { label: string, value?: string | number | null, icon?: string, mono?: boolean }) {
     return (
         <div className="flex flex-col">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <span className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-1 flex items-center gap-1">
                 {icon === 'user' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
                 {icon === 'truck' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>}
                 {icon === 'hashtag' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>}
@@ -139,7 +139,7 @@ function InfoItem({ label, value, icon, mono }: { label: string, value?: string 
                 {icon === 'lock' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
                 {label}
             </span>
-            <span className={`text-sm font-semibold text-slate-700 ${mono ? 'font-mono' : ''}`}>
+            <span className={`text-base font-bold text-black ${mono ? 'font-mono' : ''}`}>
                 {value || "-"}
             </span>
         </div>
@@ -199,10 +199,10 @@ export default function ShipmentDetailPage() {
                                     <h1 className="text-3xl font-bold text-brand-primary tracking-tight">{shipment.reference}</h1>
                                     <HealthBadge shipment={shipment} />
                                 </div>
-                                <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                                    <span className="font-medium text-slate-700">{shipment.customer}</span>
+                                <div className="flex items-center gap-3 mt-1 text-base text-slate-700">
+                                    <span className="font-bold text-black">{shipment.customer}</span>
                                     <span>•</span>
-                                    <span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-mono">{shipment.incoterm}</span>
+                                    <span className="bg-slate-100 px-2 py-0.5 rounded text-sm font-mono font-bold">{shipment.incoterm}</span>
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -215,17 +215,17 @@ export default function ShipmentDetailPage() {
                         {/* Quick Metrics Bar */}
                         <div className="flex items-center gap-8 pt-2">
                             <div>
-                                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('currentStatus')}</div>
-                                <Badge variant={getStatusVariant(shipment.status)} className="px-3 py-1 text-sm">
+                                <div className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-1">{t('currentStatus')}</div>
+                                <Badge variant={getStatusVariant(shipment.status)} className="px-3 py-1 text-base font-bold">
                                     {tEvents('types.' + (shipment.status as EventTypeValue)) || formatEventType(shipment.status)}
                                 </Badge>
-                                <span className="text-xs text-slate-400 ml-2 italic">
+                                <span className="text-sm text-slate-600 ml-2 italic">
                                     {events[0] ? `${t('updated')} ${getTimeAgo(events[0].timestamp.toString(), t)}` : ''}
                                 </span>
                             </div>
-                            <div className="hidden md:block w-px h-10 bg-slate-100"></div>
+                            <div className="hidden md:block w-px h-10 bg-slate-200"></div>
                             <div className="hidden md:block">
-                                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('estimatedDelay')}</div>
+                                <div className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-1">{t('estimatedDelay')}</div>
                                 <ETADisplay eta={shipment.planned_eta} status={shipment.status} />
                             </div>
                         </div>
@@ -302,18 +302,18 @@ export default function ShipmentDetailPage() {
                         </div>
 
                         {/* MAD & ITS Dates Row */}
-                        <div className="grid grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="grid grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                             {/* ... existing code ... */}
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">{t('mad')}</span>
-                                    <span className="text-sm font-bold text-slate-800">{shipment.mad_date ? new Date(shipment.mad_date).toLocaleDateString() : "-"}</span>
+                                    <span className="text-sm font-bold text-slate-600 uppercase tracking-wider block mb-1">{t('mad')}</span>
+                                    <span className="text-base font-bold text-black">{shipment.mad_date ? new Date(shipment.mad_date).toLocaleDateString() : "-"}</span>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center border-l border-slate-200 pl-4">
+                            <div className="flex justify-between items-center border-l-2 border-slate-300 pl-4">
                                 <div>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">{t('its')}</span>
-                                    <span className="text-sm font-bold text-slate-800">{shipment.its_date ? new Date(shipment.its_date).toLocaleDateString() : "-"}</span>
+                                    <span className="text-sm font-bold text-slate-600 uppercase tracking-wider block mb-1">{t('its')}</span>
+                                    <span className="text-base font-bold text-black">{shipment.its_date ? new Date(shipment.its_date).toLocaleDateString() : "-"}</span>
                                 </div>
                             </div>
                         </div>
@@ -394,8 +394,8 @@ export default function ShipmentDetailPage() {
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                                         </div>
                                         <div>
-                                            <div className="text-sm font-semibold text-slate-700 group-hover:text-brand-primary">{doc.name}</div>
-                                            <div className="text-[10px] text-slate-400">{doc.date} • {doc.size}</div>
+                                            <div className="text-sm font-bold text-black group-hover:text-brand-primary">{doc.name}</div>
+                                            <div className="text-xs font-medium text-slate-600">{doc.date} • {doc.size}</div>
                                         </div>
                                     </div>
                                     <svg className="w-4 h-4 text-slate-300 group-hover:text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -428,18 +428,18 @@ export default function ShipmentDetailPage() {
                                         {/* Content */}
                                         <div className={`
                                             transition-all duration-300 relative
-                                            ${isLatest ? 'opacity-100 translate-x-0' : 'opacity-70 group-hover:opacity-100'}
+                                            ${isLatest ? 'opacity-100 translate-x-0' : 'opacity-100 group-hover:opacity-100'}
                                         `}>
                                             <div className="flex items-center justify-between">
-                                                <div className="text-sm font-bold text-slate-800">
+                                                <div className="text-base font-bold text-black">
                                                     {tEvents('types.' + (event.type as EventTypeValue)) || formatEventType(event.type)}
                                                 </div>
-                                                <div className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
+                                                <div className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
                                                     {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             </div>
 
-                                            <div className="text-xs text-slate-500 mt-0.5 font-medium">
+                                            <div className="text-sm text-slate-700 mt-0.5 font-bold">
                                                 {new Date(event.timestamp).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
                                             </div>
 

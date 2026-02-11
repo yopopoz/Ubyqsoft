@@ -71,7 +71,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-3 animate-slide-up w-full">
-                        <h1 className="text-lg lg:text-xl font-light tracking-widest text-slate-600 uppercase whitespace-nowrap">
+                        <h1 className="text-lg lg:text-xl font-medium tracking-widest text-slate-800 uppercase whitespace-nowrap">
                             {t('tagline1')}
                         </h1>
                         <h1 className="text-xl lg:text-2xl font-bold tracking-widest text-[#D30026] uppercase whitespace-nowrap">
@@ -100,7 +100,7 @@ export default function LoginPage() {
                             />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h2>
-                        <p className="text-slate-500 mt-2">{t('prompt')}</p>
+                        <p className="text-slate-700 mt-2 font-medium">{t('prompt')}</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -112,7 +112,7 @@ export default function LoginPage() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D30026]/20 focus:border-[#D30026] transition-all duration-200"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-[#D30026]/20 focus:border-[#D30026] transition-all duration-200"
                                 placeholder={t('emailPlaceholder')}
                             />
                         </div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D30026]/20 focus:border-[#D30026] transition-all duration-200"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-[#D30026]/20 focus:border-[#D30026] transition-all duration-200"
                                 placeholder={t('passwordPlaceholder')}
                             />
                         </div>
@@ -161,7 +161,7 @@ export default function LoginPage() {
 
                 {/* Footer Copyright */}
                 <div className="absolute bottom-8 left-0 right-0 text-center">
-                    <p className="text-xs text-slate-400">
+                    <p className="text-sm font-medium text-slate-600">
                         {t('footer')}
                     </p>
                 </div>

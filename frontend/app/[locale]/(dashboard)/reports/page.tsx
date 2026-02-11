@@ -30,7 +30,7 @@ export default function ReportsPage() {
             <h2 className="text-2xl font-bold">Rapports</h2>
             <div className="rounded-lg border bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900">Export des Expéditions</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-base text-gray-700 font-medium">
                     Téléchargez une liste complète de toutes les expéditions et leur statut actuel au format Excel.
                 </p>
                 <div className="mt-5">

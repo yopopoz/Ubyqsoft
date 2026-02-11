@@ -26,7 +26,7 @@ export default function AdminSettingsPage() {
     const renderContent = () => {
         switch (activeTab) {
             case 'cloud': return (
-                <Suspense fallback={<div className="p-8 text-center text-slate-500">{t('loading')}</div>}>
+                <Suspense fallback={<div className="p-8 text-center text-slate-700 font-bold">{t('loading')}</div>}>
                     <CloudSettings />
                 </Suspense>
             );
@@ -43,7 +43,7 @@ export default function AdminSettingsPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-                <p className="text-slate-500">{t('description')}</p>
+                <p className="text-slate-700 font-medium">{t('description')}</p>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
@@ -56,7 +56,7 @@ export default function AdminSettingsPage() {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === tab.id
                                     ? 'bg-brand-primary/10 text-brand-primary shadow-sm'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-bold'
                                     }`}
                             >
                                 <span className="text-lg">{tab.icon}</span>

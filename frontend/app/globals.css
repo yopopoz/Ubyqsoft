@@ -16,6 +16,12 @@
   --color-status-error: var(--status-error);
   --color-status-info: var(--status-info);
 
+  /* Global Accessibility Overrides */
+  --color-slate-400: #475569; /* Darkened from default */
+  --color-slate-500: #334155; /* Darkened from default */
+  --color-gray-400: #4b5563;
+  --color-gray-500: #374151;
+
   /* Font Family */
   --font-sans: var(--font-gruppo), system-ui, sans-serif;
 }
