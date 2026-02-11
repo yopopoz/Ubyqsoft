@@ -22,6 +22,7 @@ COL_MAPPING = {
     # Basic
     'Order number': 'order_number',
     'batch': 'batch_number',
+    'BATCH': 'batch_number',
     'Client': 'customer',
     'SKU': 'sku',
     
@@ -59,6 +60,7 @@ COL_MAPPING = {
     'ETA': 'planned_eta',
     'MAD': 'mad_date',
     'DATE ITS ': 'its_date',
+    'DATE ITS': 'its_date',
     'Delivery date': 'delivery_date',
     
     # Shipping Info
