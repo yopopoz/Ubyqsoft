@@ -349,24 +349,24 @@
             "fields": {
                 "apiKey": "Clé API",
                 "model": "Modèle"
-            },
-            "prompts": {
-                "chatbot": {
-                    "title": "Prompt Système du Chatbot API",
-                    "description": "Définissez la personnalité et les connaissances de base de votre assistant virtuel.",
-                    "placeholder": "Tu es un expert..."
-                },
-                "predictive": {
-                    "title": "Prompt d'Analyse Prédictive",
-                    "description": "Instructions pour l'analyse automatique des expéditions et des risques de retard.",
-                    "placeholder": "Analyse les données..."
-                }
-            },
-            "success": "Configuration sauvegardée !",
-            "error": "Erreur lors de la sauvegarde"
+            }
         },
+        "prompts": {
+            "chatbot": {
+                "title": "Prompt Système du Chatbot API",
+                "description": "Définissez la personnalité et les connaissances de base de votre assistant virtuel.",
+                "placeholder": "Tu es un expert..."
+            },
+            "predictive": {
+                "title": "Prompt d'Analyse Prédictive",
+                "description": "Instructions pour l'analyse automatique des expéditions et des risques de retard.",
+                "placeholder": "Analyse les données..."
+            }
+        },
+        "success": "Configuration sauvegardée !",
+        "error": "Erreur lors de la sauvegarde",
         "Webhooks": {
-            "title": "Webhooks",
+            "title": "Webhooks Sortants",
             "description": "Gérez les notifications HTTP vers vos services externes",
             "new": "Nouveau Webhook",
             "table": {

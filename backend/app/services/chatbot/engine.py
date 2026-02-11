@@ -685,16 +685,18 @@ class ChatbotEngine:
             max_tokens=250,
         )
         
-        # Client specific filtering
-        user_name = self.user.name or ""
-        user_email = self.user.email or ""
-        # Check if demo account (case insensitive)
-        is_demo = "demo" in user_name.lower() or "demo" in user_email.lower()
-        
+        # Customer filtering logic
+        # 1. Use allowed_customer if set (highest priority, applies to all roles)
+        # 2. Use user.name if role is client (backward compatibility)
+        filter_customer = self.user.allowed_customer
+        if not filter_customer and self.user.role == "client":
+            filter_customer = self.user.name
+            
         final_prompt = SQL_PROMPT
-        if self.user.role == "client" and not is_demo:
+        if filter_customer and not is_demo:
             # Inject strict filtering instruction
-            client_filter = f"\n\nIMPORTANT: L'utilisateur est le client '{user_name}'. Tu DOIS ajouter 'AND customer ILIKE ''%{user_name}%''' à toutes les clauses WHERE pour filtrer les résultats. Ne montre JAMAIS de données d'autres clients."
+            # Note: We rely on the LLM to handle SQL escaping for the customer name
+            client_filter = f"\n\nIMPORTANT: L'utilisateur est restreint au client '{filter_customer}'. Tu DOIS IMPÉRATIVEMENT ajouter 'AND customer ILIKE ''%{filter_customer}%''' à toutes les clauses WHERE pour filtrer les résultats. Ne montre JAMAIS de données d'autres clients."
             final_prompt = SQL_PROMPT + client_filter
         
         self.sql_prompt = PromptTemplate.from_template(final_prompt)

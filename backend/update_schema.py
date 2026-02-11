@@ -18,6 +18,8 @@ def upgrade_db():
         print("Dropping shipments table...")
         # Use simple SQL or existing metadata
         # We need to drop dependent tables first just in case
+        db.execute(text("DROP TABLE IF EXISTS webhook_subscriptions CASCADE"))
+        db.execute(text("DROP TABLE IF EXISTS api_keys CASCADE"))
         db.execute(text("DROP TABLE IF EXISTS events CASCADE"))
         db.execute(text("DROP TABLE IF EXISTS documents CASCADE"))
         db.execute(text("DROP TABLE IF EXISTS alerts CASCADE"))

@@ -14,7 +14,7 @@ export default function CloudSettings() {
     const { token } = useAuth();
     const [isConnected, setIsConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [config, setConfig] = useState({
+    const [config, setConfig] = useState<Record<string, string>>({
         clientId: "",
         clientSecret: "",
         tenantId: "common"
@@ -25,7 +25,7 @@ export default function CloudSettings() {
         const checkStatus = async () => {
             if (!token) return;
             try {
-                const data = await apiFetch<Record<string, any>>('/settings/', { token });
+                const data = await apiFetch<Record<string, string>>('/settings/', { token });
                 if (data['MS_ACCESS_TOKEN']) {
                     setIsConnected(true);
                 }
@@ -66,7 +66,6 @@ export default function CloudSettings() {
                 ]),
                 token
             });
-            return true;
             return true;
         } catch (e) {
             alert(t('alerts.saveError'));
@@ -245,7 +244,7 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
     const [isRealtime, setIsRealtime] = useState(false);
     const [subInfo, setSubInfo] = useState<{ id: string, expirationDateTime: string } | null>(null);
     const [config, setConfig] = useState<Record<string, any>>({});
-    const [files, setFiles] = useState<any[]>([]);
+    const [files, setFiles] = useState<{ id: string; name: string; path: string; lastModified: string }[]>([]);
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
     const [isSelecting, setIsSelecting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -289,7 +288,6 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
                 token
             });
             setIsRealtime(newState);
-            setIsRealtime(newState);
             loadSubscription();
             if (newState) alert(t('alerts.realtimeEnabled'));
             else alert(t('alerts.realtimeDisabled'));
@@ -303,9 +301,8 @@ function OneDriveSyncConfig({ token }: { token: string | null }) {
     const loadFiles = async () => {
         setIsLoadingFiles(true);
         try {
-            const data = await apiFetch<any[]>('/sync/onedrive/files', { token });
+            const data = await apiFetch<{ id: string; name: string; path: string; lastModified: string }[]>('/sync/onedrive/files', { token });
             setFiles(data);
-            setIsSelecting(true);
             setIsSelecting(true);
         } catch (e) {
             alert(t('alerts.loadError'));

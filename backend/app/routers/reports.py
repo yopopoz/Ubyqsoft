@@ -15,7 +15,12 @@ router = APIRouter(
 @router.get("/shipments_export")
 def export_shipments(db: Session = Depends(get_db), current_user: User = Depends(require_ops_or_admin)):
     """Export shipments - Requires 'ops' or 'admin' role"""
-    shipments = db.query(Shipment).all()
+    query = db.query(Shipment)
+    
+    if current_user.allowed_customer:
+        query = query.filter(Shipment.customer == current_user.allowed_customer)
+        
+    shipments = query.all()
     
     wb = Workbook()
     ws = wb.active

@@ -36,6 +36,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     name = Column(String)
     role = Column(String, default="client") # client, ops, admin
+    allowed_customer = Column(String, nullable=True) # If set, restrict access to this customer
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Shipment(Base):
@@ -236,8 +237,36 @@ class ApiLog(Base):
 Shipment.alerts = relationship("Alert", back_populates="shipment")
 Shipment.documents = relationship("Document", back_populates="shipment")
 
-# Add new columns to Shipment for business logic
-# Note: These lines perform mapped column injection to the existing class if it was already defined, 
-# but here we are editing the file definition so we just add them to the class above.
-# I will edit the Shipment class code block directly to be cleaner.
+class WebhookSubscription(Base):
+    """
+    To register external services that want to be notified of events.
+    """
+    __tablename__ = "webhook_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String, nullable=False)
+    events = Column(JSON, nullable=False) # List of EventType strings
+    secret = Column(String, nullable=True) # For HMAC signature
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    failure_count = Column(Integer, default=0)
+
+class ApiKey(Base):
+    """
+    To allow external applications to access the API securely.
+    """
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False) # e.g. "Zapier Integration"
+    key_prefix = Column(String, nullable=False) # first 8 chars for identification
+    key_hash = Column(String, nullable=False, unique=True, index=True) # Hashed full key
+    scopes = Column(JSON, nullable=True) # List of permissions e.g. ["read:shipments", "write:webhooks"]
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
 

@@ -49,7 +49,7 @@ export default function AISettings() {
         if (!token) return;
         try {
             console.log("Fetching settings...");
-            const data = await apiFetch<any>('/settings/', { token });
+            const data = await apiFetch<Record<string, string>>('/settings/', { token });
             console.log("Settings fetched:", data);
 
             // Map backend simple KEY-VALUE to structured state
@@ -111,7 +111,7 @@ export default function AISettings() {
         }
     };
 
-    const handleConfigChange = (provider: AIProvider, field: keyof AIConfig, value: any) => {
+    const handleConfigChange = (provider: AIProvider, field: keyof AIConfig, value: string | boolean) => {
         setConfigs(prev => ({
             ...prev,
             [provider]: { ...prev[provider], [field]: value }

@@ -37,12 +37,25 @@ def create_shipment(
 @router.get("/", response_model=List[ShipmentSchema])
 def read_shipments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(require_any)):
     """Read shipments - All authenticated users (client, ops, admin)"""
-    shipments = db.query(Shipment).offset(skip).limit(limit).all()
+    query = db.query(Shipment)
+    
+    if current_user.allowed_customer:
+        # Support comma-separated list of allowed customers
+        allowed = [c.strip() for c in current_user.allowed_customer.split(',')]
+        query = query.filter(Shipment.customer.in_(allowed))
+        
+    shipments = query.offset(skip).limit(limit).all()
     return shipments
 
 @router.get("/{shipment_id}", response_model=ShipmentSchema)
 def read_shipment(shipment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
+    query = db.query(Shipment).filter(Shipment.id == shipment_id)
+    
+    if current_user.allowed_customer:
+        allowed = [c.strip() for c in current_user.allowed_customer.split(',')]
+        query = query.filter(Shipment.customer.in_(allowed))
+        
+    shipment = query.first()
     if shipment is None:
         raise HTTPException(status_code=404, detail="Shipment not found")
     return shipment

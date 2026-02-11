@@ -14,6 +14,7 @@ class UserBase(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     role: str = "client"
+    allowed_customer: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base, SessionLocal
-from .routers import auth, shipments, events, chatbot, reports, webhooks, sync, settings, auth_microsoft
+from .routers import auth, shipments, events, chatbot, reports, webhooks, sync, settings, auth_microsoft, webhook_settings, api_keys
 from .models import User
 from .auth import get_password_hash
 from .live import manager
@@ -27,6 +27,8 @@ app.include_router(webhooks.router)
 app.include_router(sync.router)
 app.include_router(settings.router)
 app.include_router(auth_microsoft.router)
+app.include_router(webhook_settings.router)
+app.include_router(api_keys.router)
 
 @app.websocket("/ws/shipments")
 async def websocket_endpoint(websocket: WebSocket):

@@ -81,5 +81,14 @@ async def create_event(
 @router.get("/shipments/{shipment_id}", response_model=List[EventSchema])
 def read_shipment_events(shipment_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_any)):
     """Read events - All authenticated users"""
+    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
+    if not shipment:
+        return []
+        
+    if current_user.allowed_customer:
+        allowed = [c.strip() for c in current_user.allowed_customer.split(',')]
+        if shipment.customer not in allowed:
+            raise HTTPException(status_code=403, detail="Not authorized to view this shipment's events")
+
     events = db.query(Event).filter(Event.shipment_id == shipment_id).order_by(Event.timestamp.desc()).all()
     return events
