@@ -611,8 +611,11 @@ SQL: SELECT e.type, e.timestamp, e.source, e.external_id, s.reference FROM event
 Q: erreurs API récentes / logs API erreurs / problèmes synchronisation
 SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_logs WHERE status_code >= 400 OR error_message IS NOT NULL ORDER BY created_at DESC LIMIT 20;
 
-=== FIN DES TEMPLATES ===
 
+=== FIN DES TEMPLATES ===
+"""
+
+SQL_PROMPT_SUFFIX = """
 Q: {question}
 SQL:"""
 
@@ -694,12 +697,14 @@ class ChatbotEngine:
             
         final_prompt = SQL_PROMPT
 
+
         # Default is_demo to False for production safety
         is_demo = False
 
+        filter_instruction = ""
         if filter_customer and not is_demo:
             # Inject strict filtering instruction with smarter SQL handling
-            client_filter = f"""
+            filter_instruction = f"""
 
 IMPORTANT: L'utilisateur est restreint au client '{filter_customer}'. 
 Tu DOIS filtrer TOUS les résultats pour ce client.
@@ -708,7 +713,8 @@ RÈGLES DE FILTRAGE :
 2. Si la requête n'a PAS de clause WHERE, ajoute "WHERE customer ILIKE '%{filter_customer}%'".
 3. Ne montre JAMAIS de données d'autres clients.
 """
-            final_prompt = SQL_PROMPT + client_filter
+            
+        final_prompt = SQL_PROMPT + filter_instruction + SQL_PROMPT_SUFFIX
         
         self.sql_prompt = PromptTemplate.from_template(final_prompt)
         self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
