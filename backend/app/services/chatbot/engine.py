@@ -693,6 +693,9 @@ class ChatbotEngine:
             filter_customer = self.user.name
             
         final_prompt = SQL_PROMPT
+
+        # Default is_demo to False for production safety
+        is_demo = False
         if filter_customer and not is_demo:
             # Inject strict filtering instruction
             # Note: We rely on the LLM to handle SQL escaping for the customer name
