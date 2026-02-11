@@ -299,7 +299,7 @@ def execute_import(
                     skipped += 1
                     continue
                 
-                # Update existing
+                # Update existing (from DB or previously created in this import)
                 existing = existing_refs[reference]
                 data = row['data'].copy()
                 data.pop('reference', None)  # Don't update reference
@@ -317,6 +317,11 @@ def execute_import(
                 
                 shipment = Shipment(**data)
                 db.add(shipment)
+                db.flush()  # Flush to DB so it's visible in session
+                
+                # Track newly created shipment so subsequent rows
+                # with the same reference will UPDATE instead of INSERT
+                existing_refs[reference] = shipment
                 created += 1
                 
         except Exception as e:
