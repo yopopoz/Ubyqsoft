@@ -89,6 +89,24 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+                {/* En Attente */}
+                <div className="group relative bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-1">{t('pending')}</p>
+                            <h3 className="text-4xl font-bold text-black tracking-tight">{loadingStats ? "-" : stats.pending}</h3>
+                        </div>
+                        <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-amber-50/50 transition-colors">
+                            <svg className="w-6 h-6 text-slate-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div className="mt-4 w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                        <div className="bg-slate-300 h-full" style={{ width: `${stats.total ? (stats.pending / stats.total) * 100 : 0}%` }}></div>
+                    </div>
+                </div>
+
                 {/* En Transit (Accent Rouge) */}
                 <div className="group relative bg-white p-6 rounded-2xl border border-brand-secondary/10 shadow-[0_4px_20px_rgba(211,0,38,0.05)] hover:shadow-[0_8px_30px_rgba(211,0,38,0.1)] transition-all duration-300">
                     <div className="flex justify-between items-start">
@@ -122,24 +140,6 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-4 w-full bg-slate-100 h-1 rounded-full overflow-hidden">
                         <div className="bg-slate-400 h-full" style={{ width: `${stats.total ? (stats.delivered / stats.total) * 100 : 0}%` }}></div>
-                    </div>
-                </div>
-
-                {/* En Attente */}
-                <div className="group relative bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-1">{t('pending')}</p>
-                            <h3 className="text-4xl font-bold text-black tracking-tight">{loadingStats ? "-" : stats.pending}</h3>
-                        </div>
-                        <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-amber-50/50 transition-colors">
-                            <svg className="w-6 h-6 text-slate-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="mt-4 w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                        <div className="bg-slate-300 h-full" style={{ width: `${stats.total ? (stats.pending / stats.total) * 100 : 0}%` }}></div>
                     </div>
                 </div>
             </div>
