@@ -703,14 +703,21 @@ class ChatbotEngine:
 
         filter_instruction = ""
         if filter_customer and not is_demo:
+            # Escape single quotes for SQL safety (e.g. L'Oreal -> L''Oreal)
+            safe_customer = filter_customer.replace("'", "''")
+            
             # Inject strict filtering instruction with smarter SQL handling
             filter_instruction = f"""
 
-IMPORTANT: L'utilisateur est restreint au client '{filter_customer}'. 
+IMPORTANT: L'utilisateur est restreint au client '{safe_customer}'. 
 Tu DOIS filtrer TOUS les résultats pour ce client.
+
+RÈGLES DE RECHERCHE PRIORITAIRES :
+1. Si la recherche contient des chiffres et des lettres (ex: LG791800), c'est probablement un SKU -> cherche d'abord dans la colonne 'sku'.
+
 RÈGLES DE FILTRAGE :
-1. Si la requête a déjà une clause WHERE, ajoute "AND customer ILIKE '%{filter_customer}%'".
-2. Si la requête n'a PAS de clause WHERE, ajoute "WHERE customer ILIKE '%{filter_customer}%'".
+1. Si la requête a déjà une clause WHERE, ajoute "AND customer ILIKE '%{safe_customer}%'".
+2. Si la requête n'a PAS de clause WHERE, ajoute "WHERE customer ILIKE '%{safe_customer}%'".
 3. Ne montre JAMAIS de données d'autres clients.
 """
             
