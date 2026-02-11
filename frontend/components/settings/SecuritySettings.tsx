@@ -52,7 +52,7 @@ export default function SecuritySettings() {
             const data = await apiFetch<ApiKeyCreated>("/settings/api-keys/", {
                 token,
                 method: "POST",
-                body: { name: newKeyName }
+                body: JSON.stringify({ name: newKeyName })
             });
             setCreatedKey(data.key); // Provide the full key to user
             setNewKeyName("");
