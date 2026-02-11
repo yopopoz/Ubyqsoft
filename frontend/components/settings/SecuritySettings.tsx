@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/components/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/services/api";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
