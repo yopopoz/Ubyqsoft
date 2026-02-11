@@ -243,28 +243,57 @@ def validate_and_preview(
 ) -> List[Dict[str, Any]]:
     """
     Validate rows and check for existing references.
-    
-    Returns list with status: 'new', 'update', or 'error'
+    Key Logic matches execute_import: Order + Batch.
     """
-    # Get all existing references
-    existing_refs = {s.reference for s in db.query(Shipment.reference).all()}
+    # Map existing shipments by (order_number, batch_number)
+    existing_shipments_map = {}
+    all_shipments = db.query(Shipment).all()
+    
+    for s in all_shipments:
+        order_key = str(s.order_number).strip() if s.order_number else None
+        batch_key = _normalize_batch(s.batch_number)
+        
+        if order_key:
+             existing_shipments_map[(order_key, batch_key)] = True
     
     preview_rows = []
     
     for row in parsed_rows:
+        row_order = row.get('data', {}).get('order_number')
+        row_batch = row.get('data', {}).get('batch_number')
+        
+        lookup_order = str(row_order).strip() if row_order else None
+        lookup_batch = _normalize_batch(row_batch)
+        lookup_key = (lookup_order, lookup_batch)
+        
+        exists = False
+        if lookup_order:
+             exists = lookup_key in existing_shipments_map
+        
         preview_row = {
             'row_number': row['row_number'],
             'reference': row.get('reference'),
             'customer': row.get('data', {}).get('customer'),
             'order_number': row.get('data', {}).get('order_number'),
             'planned_etd': row.get('data', {}).get('planned_etd'),
-            'status': 'error' if row.get('error') else ('update' if row.get('reference') in existing_refs else 'new'),
+            'status': 'error' if row.get('error') else ('update' if exists else 'new'),
             'error': row.get('error')
         }
         preview_rows.append(preview_row)
     
     return preview_rows
 
+
+def _normalize_batch(batch_val: Any) -> Optional[str]:
+    """Normalize batch value to string, handling float integers."""
+    if batch_val is None:
+        return None
+    try:
+        if isinstance(batch_val, float) and batch_val.is_integer():
+            return str(int(batch_val))
+        return str(batch_val).strip()
+    except:
+        return str(batch_val).strip()
 
 def execute_import(
     parsed_rows: List[Dict[str, Any]],
@@ -273,16 +302,30 @@ def execute_import(
 ) -> Dict[str, Any]:
     """
     Execute the import with the given mode.
-    
-    Returns ImportResult with counts and errors.
+    Key Logic: Update existing by (Order number + Batch), Create otherwise.
     """
     created = 0
     updated = 0
     skipped = 0
     errors = []
     
-    # Get existing shipments by reference
-    existing_refs = {s.reference: s for s in db.query(Shipment).all()}
+    # Map existing shipments by (order_number, batch_number)
+    # Be careful: batch_number in DB might be None, empty string, or various formats.
+    # We normalize to string if possible for matching.
+    existing_shipments_map = {}
+    
+    all_shipments = db.query(Shipment).all()
+    for s in all_shipments:
+        order_key = str(s.order_number).strip() if s.order_number else None
+        batch_key = _normalize_batch(s.batch_number)
+        
+        if order_key:
+             # Use a tuple key: (order, batch)
+             # Note: If batch is None, key is (order, None)
+             existing_shipments_map[(order_key, batch_key)] = s
+    
+    # Track processed in this batch to handle duplicates within the file itself
+    # If file has 2 rows for same shipment, second one should UPDATE the first one (which might be new)
     
     for row in parsed_rows:
         if row.get('error'):
@@ -293,43 +336,53 @@ def execute_import(
             })
             continue
         
-        reference = row.get('reference')
-        if not reference:
-            errors.append({
+        # Get identifying info from ROW data
+        row_order = row['data'].get('order_number')
+        row_batch = row['data'].get('batch_number')
+        
+        # Validate critical fields
+        if not row_order:
+             errors.append({
                 'row': row['row_number'],
                 'reference': None,
-                'error': 'Référence manquante'
+                'error': 'Order number manquant (requis pour identification)'
             })
-            continue
+             continue
+
+        # Normalize keys for lookup
+        lookup_order = str(row_order).strip()
+        lookup_batch = _normalize_batch(row_batch)
+        lookup_key = (lookup_order, lookup_batch)
         
         try:
-            # Status Change Detection & Alert Logic
-            if reference in existing_refs:
+            # 1. Check if shipment exists (in DB or created in this session)
+            existing = existing_shipments_map.get(lookup_key)
+            
+            if existing:
+                # UPDATE MODE
                 if mode == ImportMode.CREATE_ONLY:
                     skipped += 1
                     continue
 
-                existing = existing_refs[reference]
                 old_status = existing.status
                 new_status = row['data'].get('status')
                 
-                # Update existing (from DB or previously created in this import)
+                # Update fields
                 data = row['data'].copy()
-                data.pop('reference', None)  # Don't update reference
+                data.pop('reference', None)  # Don't update reference, keep original
                 
                 for key, value in data.items():
                     if value is not None and hasattr(existing, key):
                         setattr(existing, key, value)
                 
-                # Alert Logic: "Met a jour les alertes eventuelles"
-                # If status changed to TRANSIT_OCEAN (e.g. from ON BOARD), check for delays
+                # Alert Logic
                 if new_status == "TRANSIT_OCEAN" and old_status != "TRANSIT_OCEAN":
-                    # Close any "Late for Loading" alerts
+                    # Close "LOADING" alerts
                     for alert in existing.alerts:
                         if alert.active and "LOADING" in alert.type:
                              alert.active = False
                     
-                    # Create new Alert if ETA is in the past
+                    # Create DELAY alert check
                     if existing.planned_eta and existing.planned_eta.date() < datetime.now().date():
                         from ..models import Alert
                         new_alert = Alert(
@@ -342,27 +395,36 @@ def execute_import(
                         db.add(new_alert)
 
                 updated += 1
+                
             else:
-                # Create new
+                # CREATE MODE
                 data = row['data'].copy()
-                # Status "ON BOARD" -> "TRANSIT_OCEAN" handled in parsing
+                
+                # Ensure reference is set (computed)
+                reference = row.get('reference')
+                if not reference:
+                     # Fallback if parsing didn't set it (shouldn't happen strictly)
+                     reference = f"{lookup_order}-{lookup_batch}" if lookup_batch else lookup_order
+                
+                data['reference'] = reference
+                
                 if 'status' not in data:
                      data['status'] = 'CREATED'
+                
                 data['created_at'] = datetime.now()
                 
                 shipment = Shipment(**data)
                 db.add(shipment)
-                db.flush()  # Flush to DB so it's visible in session
+                db.flush()  # Get ID and make available
                 
-                # Track newly created shipment so subsequent rows
-                # with the same reference will UPDATE instead of INSERT
-                existing_refs[reference] = shipment
+                # Add to map so subsequent rows update it
+                existing_shipments_map[lookup_key] = shipment
                 created += 1
                 
         except Exception as e:
             errors.append({
                 'row': row['row_number'],
-                'reference': reference,
+                'reference': row.get('reference'),
                 'error': str(e)
             })
     
