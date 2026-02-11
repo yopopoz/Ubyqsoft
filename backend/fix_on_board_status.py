@@ -11,19 +11,23 @@ from sqlalchemy import or_
 def fix_on_board_status():
     session = SessionLocal()
     try:
-        # Find shipments with "ON BOARD" in departure_stat but status NOT "TRANSIT_OCEAN"
+        # Find shipments with "ON BOARD" in departure_stat OR status is "ON BOARD"
         shipments = session.query(Shipment).filter(
-            Shipment.departure_stat.ilike("%ON BOARD%"),
-            Shipment.status != "TRANSIT_OCEAN"
-        ).all()
+            or_(
+                Shipment.departure_stat.ilike("%ON BOARD%"),
+                Shipment.status.ilike("%ON BOARD%"),
+                Shipment.status == "ON_BOARD"
+            )
+        ).filter(Shipment.status != "TRANSIT_OCEAN").all()
 
         print(f"Found {len(shipments)} shipments to update.")
 
         count = 0
         for s in shipments:
-            print(f"Updating {s.reference}: {s.status} -> TRANSIT_OCEAN (Departure: {s.departure_stat})")
-            s.status = "TRANSIT_OCEAN"
-            count += 1
+            if s.status != "TRANSIT_OCEAN":
+                print(f"Updating {s.reference}: {s.status} -> TRANSIT_OCEAN (Departure: {s.departure_stat})")
+                s.status = "TRANSIT_OCEAN"
+                count += 1
         
         if count > 0:
             session.commit()
