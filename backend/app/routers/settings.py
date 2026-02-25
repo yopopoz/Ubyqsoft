@@ -63,3 +63,29 @@ def update_settings(
             
     db.commit()
     return {"status": "ok"}
+
+class TestEmailRequest(BaseModel):
+    to_email: str
+
+@router.post("/test-email", status_code=status.HTTP_200_OK)
+def test_email(
+    request: TestEmailRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    from ..services.email_service import send_email
+    
+    success, message = send_email(
+        to_email=request.to_email,
+        subject="Test de configuration SMTP - Logistics Chatbot",
+        body="Ceci est un test pour vérifier que la configuration SMTP fonctionne correctement.",
+        db=db
+    )
+    
+    if not success:
+        raise HTTPException(status_code=500, detail=message)
+        
+    return {"status": "ok", "message": message}

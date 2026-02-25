@@ -81,6 +81,7 @@ COL_MAPPING = {
     'Taux fret': 'freight_rate',
     'Départ': 'departure_stat',
     'Trouvé': 'found_stat',
+    'Status': 'excel_status',
     
     # Contacts
     'LOG contact': 'responsable_pure_trade',
@@ -222,12 +223,36 @@ def parse_excel(file_content: bytes) -> Tuple[List[Dict[str, Any]], List[str]]:
             row_data['data']['origin'] = _get_value(row, 'Loading Place')
             row_data['data']['destination'] = _get_value(row, 'POD')
 
-            # Status Inference Logic (ON BOARD -> TRANSIT_OCEAN)
+            # --- Status Inference Logic ---
+            excel_status_val = row_data['data'].get('excel_status')
             dep_stat = row_data['data'].get('departure_stat')
-            if dep_stat and isinstance(dep_stat, str) and "ON BOARD" in dep_stat.upper():
-                row_data['data']['status'] = "TRANSIT_OCEAN"
-            elif dep_stat and isinstance(dep_stat, str) and "TRANSIT" in dep_stat.upper():
-                row_data['data']['status'] = "TRANSIT_OCEAN"
+            
+            inferred_status = None
+            
+            # 1. Primary check on new 'Status' column
+            if excel_status_val and isinstance(excel_status_val, str):
+                s = excel_status_val.upper().strip()
+                if "ON BOARD" in s:
+                    inferred_status = "TRANSIT_OCEAN"
+                elif "READY" in s:
+                    inferred_status = "CONTAINER_READY_FOR_DEPARTURE"
+                elif "PROD" in s:
+                    inferred_status = "PRODUCTION_READY"
+                elif "DELIVERED" in s:
+                    inferred_status = "FINAL_DELIVERY"
+            
+            # 2. Fallback check on 'Départ' if not found
+            if not inferred_status and dep_stat and isinstance(dep_stat, str):
+                s = dep_stat.upper().strip()
+                if "ON BOARD" in s or "TRANSIT" in s:
+                    inferred_status = "TRANSIT_OCEAN"
+            
+            # 3. Last fallback: Check delivery_date
+            if not inferred_status and row_data['data'].get('delivery_date'):
+                inferred_status = "FINAL_DELIVERY"
+                
+            if inferred_status:
+                row_data['data']['status'] = inferred_status
             
         except Exception as e:
             row_data['error'] = f"Erreur parsing: {str(e)}"
@@ -370,6 +395,7 @@ def execute_import(
                 # Update fields
                 data = row['data'].copy()
                 data.pop('reference', None)  # Don't update reference, keep original
+                data.pop('excel_status', None) # Temporary extraction field, don't store it in DB directly
                 
                 for key, value in data.items():
                     if value is not None and hasattr(existing, key):
@@ -407,6 +433,7 @@ def execute_import(
                      reference = f"{lookup_order}-{lookup_batch}" if lookup_batch else lookup_order
                 
                 data['reference'] = reference
+                data.pop('excel_status', None) # Don't store this in DB schema
                 
                 if 'status' not in data:
                      data['status'] = 'CREATED'

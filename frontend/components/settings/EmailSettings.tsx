@@ -62,6 +62,29 @@ export default function EmailSettings() {
         }
     };
 
+    const handleTest = async () => {
+        if (!token) return;
+
+        const testEmail = prompt("Entrez l'adresse email de test:", user);
+        if (!testEmail) return;
+
+        setIsLoading(true);
+        try {
+            const res = await apiFetch<any>('/settings/test-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to_email: testEmail }),
+                token
+            });
+            alert(res.message || "Test d'email réussi");
+        } catch (e: any) {
+            console.error(e);
+            alert(`Erreur lors du test: ${e.message || "Echec de l'envoi"}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-2xl space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
@@ -130,9 +153,9 @@ export default function EmailSettings() {
 
                     <div className="pt-4 flex items-center justify-between">
                         <button
-                            className="text-brand-primary hover:text-brand-secondary text-sm font-medium opacity-50 cursor-not-allowed"
-                            disabled
-                            title="Non implémenté"
+                            onClick={handleTest}
+                            disabled={isLoading || !host || !user || !password}
+                            className="text-brand-primary hover:text-brand-secondary text-sm font-medium transition-colors disabled:opacity-50"
                         >
                             {t('test')}
                         </button>
