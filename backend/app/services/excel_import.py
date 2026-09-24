@@ -109,12 +109,20 @@ def _get_value(row: pd.Series, col_name: str) -> Any:
 
 
 def _parse_date(value: Any) -> Optional[datetime]:
-    """Parse a value as datetime."""
+    """Parse a value as datetime. Always returns None or a naive datetime (no tzinfo, no NaT)."""
     if value is None:
         return None
     try:
-        return pd.to_datetime(value).to_pydatetime()
-    except:
+        result = pd.to_datetime(value)
+        # pd.to_datetime can return NaT for missing/invalid values
+        if pd.isna(result):
+            return None
+        dt = result.to_pydatetime()
+        # Strip timezone info (openpyxl and Excel don't support tz-aware datetimes)
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+        return dt
+    except Exception:
         return None
 
 

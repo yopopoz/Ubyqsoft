@@ -12,6 +12,14 @@ router = APIRouter(
     tags=["reports"]
 )
 
+
+def _strip_tz(dt):
+    """Strip timezone info from a datetime for Excel compatibility."""
+    if dt is not None and hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+        return dt.replace(tzinfo=None)
+    return dt
+
+
 @router.get("/shipments_export")
 def export_shipments(db: Session = Depends(get_db), current_user: User = Depends(require_ops_or_admin)):
     """Export shipments - Requires 'ops' or 'admin' role"""
@@ -39,7 +47,7 @@ def export_shipments(db: Session = Depends(get_db), current_user: User = Depends
             s.origin,
             s.destination,
             s.status,
-            s.planned_eta
+            _strip_tz(s.planned_eta)
         ])
     
     output = BytesIO()
