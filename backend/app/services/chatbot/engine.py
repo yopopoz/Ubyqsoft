@@ -681,11 +681,14 @@ class ChatbotEngine:
         if not groq_api_key:
             raise ValueError("GROQ_API_KEY environment variable is required")
         
+        groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+        groq_max_tokens = int(os.getenv("GROQ_MAX_TOKENS", "500"))
+
         self.llm = ChatGroq(
             api_key=groq_api_key,
-            model="meta-llama/llama-4-scout-17b-16e-instruct",  # 30K context
+            model=groq_model,
             temperature=0,
-            max_tokens=250,
+            max_tokens=groq_max_tokens,
         )
         
         # Customer filtering logic

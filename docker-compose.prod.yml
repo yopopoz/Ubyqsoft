@@ -27,6 +27,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       FRONTEND_URL: ${FRONTEND_URL:-https://puretrack.cloud}
       GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
     depends_on:
       - postgres
     networks:
