@@ -10,609 +10,57 @@ from ...database import engine as db_engine
 # COMPREHENSIVE SQL PROMPT - ALL TEMPLATES
 # ========================================
 
-SQL_PROMPT = """Tu es un expert SQL PostgreSQL pour une application de suivi logistique. Génère UNIQUEMENT une requête SQL valide, sans explication.
+SQL_PROMPT = """Tu es un expert SQL PostgreSQL pour une application de suivi logistique. Génère UNIQUEMENT une requête SQL SELECT valide, sans texte ni explication autour.
 
 === TABLES DISPONIBLES ===
+1. shipments (id, reference, batch_number, order_number, sku, customer, status, origin, destination, planned_etd, planned_eta, container_number, seal_number, vessel, quantity, weight_kg, volume_cbm, supplier, forwarder_name, qc_date, mad_date, its_date, delivery_date, transport_mode, compliance_status, rush_status, incoterm, comments_internal, created_at, carrier_scac, last_sync_at, sync_status, next_poll_at)
+2. events (id, shipment_id, type, timestamp, note, source, external_id)
+   - type: ORDER_INFO, PRODUCTION_READY, LOADING_IN_PROGRESS, TRANSIT_OCEAN, ARRIVAL_PORT, IMPORT_CLEARANCE, FINAL_DELIVERY, GPS_POSITION, CUSTOMS_STATUS
+   - source: MANUAL, API_CMA, API_MAERSK, API_VESSELFINDER
+3. alerts (id, type, severity, message, impact_days, category, shipment_id, linked_route, active, created_at)
+   - type: WEATHER, STRIKE, CUSTOMS, PORT_CONGESTION, PANDEMIC, FINANCIAL | severity: LOW, MEDIUM, HIGH, CRITICAL
+4. documents (id, shipment_id, type, filename, url, status, uploaded_at)
+   - type: BL, INVOICE, PACKING_LIST, QC_REPORT, CUSTOMS_DEC
+5. carrier_schedules (id, carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name, voyage_ref)
+6. api_logs (id, provider, endpoint, method, status_code, request_payload, response_body, error_message, duration_ms, created_at)
 
-SHIPMENTS (expéditions - table principale):
-id, reference, batch_number, order_number, sku, customer, status, origin, destination, planned_etd, planned_eta, container_number, seal_number, vessel, quantity, weight_kg, volume_cbm, supplier, forwarder_name, qc_date, mad_date, its_date, delivery_date, transport_mode, compliance_status, rush_status, incoterm, comments_internal, created_at, carrier_scac, last_sync_at, sync_status, next_poll_at
-
-EVENTS (jalons/étapes):
-id, shipment_id, type, timestamp, note, source, external_id
-Types: ORDER_INFO, PRODUCTION_READY, LOADING_IN_PROGRESS, TRANSIT_OCEAN, ARRIVAL_PORT, IMPORT_CLEARANCE, FINAL_DELIVERY, GPS_POSITION, CUSTOMS_STATUS
-Sources: MANUAL, API_CMA, API_MAERSK, API_VESSELFINDER
-
-ALERTS (aléas/risques):
-id, type, severity, message, impact_days, category, shipment_id, linked_route, active, created_at
-Types: WEATHER, STRIKE, CUSTOMS, PORT_CONGESTION, PANDEMIC, FINANCIAL
-Severity: LOW, MEDIUM, HIGH, CRITICAL
-
-DOCUMENTS:
-id, shipment_id, type, filename, url, status, uploaded_at
-Types: BL, INVOICE, PACKING_LIST, QC_REPORT, CUSTOMS_DEC
-
-CARRIER_SCHEDULES (horaires transporteurs):
-id, carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name, voyage_ref
-
-API_LOGS (logs des appels API transporteurs):
-id, provider, endpoint, method, status_code, request_payload, response_body, error_message, duration_ms, created_at
-Providers: CMA_CGM, MAERSK, VESSELFINDER, etc.
-
-=== DICTIONNAIRE DE SYNONYMES COMPLET ===
-
-TERMES DE RECHERCHE:
-- "où est", "position", "suivi", "tracking", "localisation", "statut", "status", "état", "state", "point sur", "update on", "news", "info sur" → rechercher dans shipments
-- "commande", "order", "PO", "bon de commande", "purchase order", "ref", "référence", "reference" → chercher dans reference
-- "lot", "numéro lot", "batch", "batch number", "lot number", "n° lot" → chercher dans batch_number
-- "article", "produit", "sku", "item", "product" → chercher dans sku
-- "client", "customer", "acheteur", "buyer" → chercher dans customer
-- "fournisseur", "supplier", "vendor", "source" → chercher dans supplier
-
-DATES:
-- "ETD", "date départ", "départ usine", "quand ça part", "departure", "ship date", "date expédition", "date envoi" → planned_etd
-- "ETA", "date arrivée", "arrivée prévue", "quand ça arrive", "arrival", "delivery date prévue", "livraison prévue" → planned_eta
-- "livraison", "delivery", "date livraison", "delivered", "réception" → delivery_date
-- "MAD", "mise à disposition", "disponibilité", "mise à dispo", "available date" → mad_date
-- "ITS", "instruction", "date instruction", "instructions to ship" → its_date
-- "QC", "qualité", "quality", "contrôle qualité", "quality check", "inspection" → qc_date
-
-TRANSPORT:
-- "conteneur", "container", "boîte", "box", "ctr", "cntr" → container_number
-- "navire", "vessel", "bateau", "ship", "boat", "cargo" → vessel
-- "maritime", "sea", "mer", "ocean", "boat", "bateau" → transport_mode ILIKE '%SEA%'
-- "aérien", "air", "avion", "flight", "plane", "cargo aérien" → transport_mode ILIKE '%AIR%'
-- "routier", "road", "camion", "truck", "terrestre" → transport_mode ILIKE '%ROAD%'
-- "transitaire", "forwarder", "freight forwarder", "commissionnaire" → forwarder_name
-- "scellé", "seal", "plomb" → seal_number
-
-PROBLÈMES:
-- "retard", "retards", "late", "delayed", "en retard", "overdue" → planned_eta < CURRENT_DATE
-- "urgent", "rush", "prioritaire", "priority", "express", "hot" → rush_status = true
-- "aléa", "aléas", "risque", "risques", "problème", "issue", "alert", "alerte", "incident" → alerts
-- "météo", "weather", "tempête", "storm", "typhon", "ouragan" → alerts WHERE type = 'WEATHER'
-- "grève", "strike", "mouvement social" → alerts WHERE type = 'STRIKE'
-- "congestion", "port congestion", "engorgement", "embouteillage" → alerts WHERE type = 'PORT_CONGESTION'
-- "douane", "customs", "dédouanement", "clearance" → alerts WHERE type = 'CUSTOMS'
-
-TRAÇABILITÉ:
-- "jalon", "jalons", "étape", "étapes", "milestone", "milestones", "event", "events", "historique", "timeline", "suivi" → events
-- "tracking", "trace", "traçabilité", "tracing" → events
-- "GPS", "position GPS", "localisation temps réel", "real-time position" → events WHERE type = 'GPS_POSITION'
-
-DOCUMENTS:
-- "doc", "docs", "document", "documents", "papiers", "paperwork", "files" → documents
-- "BL", "bill of lading", "connaissement", "B/L" → documents WHERE type = 'BL'
-- "facture", "invoice", "factures", "invoices" → documents WHERE type = 'INVOICE'
-- "packing list", "liste colisage", "packing", "colisage" → documents WHERE type = 'PACKING_LIST'
-- "rapport QC", "QC report", "rapport qualité", "quality report", "inspection report" → documents WHERE type = 'QC_REPORT'
-- "déclaration douane", "customs declaration", "DAU" → documents WHERE type = 'CUSTOMS_DEC'
-
-INCOTERMS:
-- "DDP", "rendu droits acquittés", "delivered duty paid" → incoterm = 'DDP'
-- "FOB", "free on board", "franco à bord" → incoterm = 'FOB'
-- "EXW", "ex works", "départ usine" → incoterm = 'EXW'
-- "CIF", "cost insurance freight" → incoterm = 'CIF'
-- "CFR", "cost and freight" → incoterm = 'CFR'
-
-SCHEDULES:
-- "schedule", "schedules", "horaire", "horaires", "planning", "programme" → carrier_schedules
-- "prochain départ", "next departure", "prochaine rotation" → carrier_schedules WHERE etd >= CURRENT_DATE
-- "transit time", "temps transit", "durée transit" → transit_time_days
-
-STATISTIQUES:
-- "stats", "statistiques", "statistics", "chiffres", "numbers", "kpi", "indicateurs" → GROUP BY + COUNT
-- "combien", "how many", "nombre de", "total", "count" → COUNT(*)
-- "répartition", "breakdown", "distribution", "ventilation" → GROUP BY
-
-CONFORMITÉ:
-- "conforme", "compliant", "compliance", "conformité" → compliance_status
-- "non conforme", "non-compliant", "rejected", "rejeté" → compliance_status contient 'NON' ou 'REJECT'
+=== SYNONYMES & MAPPING ===
+- Commande/PO/ref → reference | Lot/batch → batch_number | Article/produit/SKU → sku | Client → customer | Fournisseur → supplier | Transitaire → forwarder_name
+- Départ/ETD → planned_etd | Arrivée/ETA → planned_eta | Livraison → delivery_date | Mise à dispo/MAD → mad_date | Instruction/ITS → its_date | Qualité/QC → qc_date
+- Conteneur/boîte → container_number | Navire/bateau → vessel | Scellé/plomb → seal_number
+- Maritime/mer → transport_mode ILIKE '%SEA%' | Aérien/avion → transport_mode ILIKE '%AIR%' | Routier/camion → transport_mode ILIKE '%ROAD%'
+- En retard → planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' AND status NOT ILIKE '%FINAL%'
+- Urgent/prioritaire/rush → rush_status = true | Aléas/risques → alerts WHERE active = true
 
 === RÈGLES SQL ===
-- PRIORITÉ SKU: Si la recherche ressemble à un code produit, chercher d'abord dans la colonne 'sku'.
-- Pour chercher X général: WHERE (sku ILIKE '%X%' OR reference ILIKE '%X%' OR batch_number ILIKE '%X%')
-- Toujours LIMIT 10 sauf si stats/comptage
-- Dates: CURRENT_DATE pour aujourd'hui
-- Intervalle: CURRENT_DATE + INTERVAL '7 days'
+- Si la recherche ressemble à un code article/SKU (ex: LG791800), chercher dans (sku ILIKE '%X%' OR reference ILIKE '%X%' OR batch_number ILIKE '%X%').
+- Toujours inclure LIMIT 15 (sauf pour COUNT/GROUP BY).
+- Utiliser CURRENT_DATE pour la date du jour.
 
-=== TEMPLATES - RECHERCHE & STATUT ===
+=== EXEMPLES DE REQUÊTES ===
+Q: Où est ma commande X / statut SKU X
+SQL: SELECT reference, batch_number, sku, status, customer, origin, destination, planned_etd, planned_eta, vessel, container_number, transport_mode FROM shipments WHERE reference ILIKE '%X%' OR sku ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 10;
 
-Q: Où est mon article X / SKU X / produit X
-SQL: SELECT reference, sku, batch_number, status, quantity, planned_eta FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
+Q: Commandes en retard
+SQL: SELECT reference, batch_number, sku, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard, customer FROM shipments WHERE planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' AND status NOT ILIKE '%FINAL%' ORDER BY jours_retard DESC LIMIT 15;
 
-Q: statut du SKU X / info sur article X
-SQL: SELECT reference, sku, status, planned_eta, vessel, container_number FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
+Q: Aléas actifs / risques météo
+SQL: SELECT type, severity, message, impact_days, linked_route FROM alerts WHERE active = true ORDER BY created_at DESC LIMIT 15;
 
-Q: Quantité pour SKU X
-SQL: SELECT reference, sku, quantity, status FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
+Q: Historique jalons / suivi événements de X
+SQL: SELECT e.type, e.timestamp, e.note, s.reference FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%' ORDER BY e.timestamp DESC LIMIT 20;
 
-Q: où est ma commande X / statut X / position X / suivi X
-SQL: SELECT reference, batch_number, sku, status, planned_eta, vessel, destination FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' OR sku ILIKE '%X%' LIMIT 5;
+Q: Documents / BL / facture pour X
+SQL: SELECT d.type, d.filename, d.status, d.uploaded_at, s.reference FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%' ORDER BY d.uploaded_at DESC LIMIT 10;
 
-Q: statut détaillé X / tout sur commande X / détails X
-SQL: SELECT reference, batch_number, sku, status, customer, origin, destination, planned_etd, planned_eta, vessel, container_number, transport_mode, incoterm FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' OR sku ILIKE '%X%' LIMIT 5;
+Q: Prochains horaires / schedules transporteurs
+SQL: SELECT carrier, pol, pod, mode, etd, eta, transit_time_days, vessel_name FROM carrier_schedules WHERE etd >= CURRENT_DATE ORDER BY etd LIMIT 15;
 
-Q: chercher lot X / numéro de lot X
-SQL: SELECT reference, batch_number, status, customer, planned_eta FROM shipments WHERE batch_number ILIKE '%X%' LIMIT 10;
+Q: Statistiques par statut / client
+SQL: SELECT status, COUNT(*) as nb, SUM(quantity) as total_qty FROM shipments GROUP BY status ORDER BY nb DESC;
 
-Q: chercher SKU X / article X
-SQL: SELECT reference, sku, batch_number, status, quantity FROM shipments WHERE sku ILIKE '%X%' LIMIT 10;
-
-Q: chercher order_number X / numéro commande X
-SQL: SELECT reference, order_number, batch_number, customer, status FROM shipments WHERE order_number ILIKE '%X%' LIMIT 10;
-
-=== TEMPLATES - DATES ETD/ETA ===
-
-Q: ETD X / date départ usine X / quand part X
-SQL: SELECT reference, batch_number, planned_etd, origin, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: ETA X / arrivée prévue X / quand arrive X
-SQL: SELECT reference, batch_number, planned_eta, destination, vessel, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: livraison X / date livraison X
-SQL: SELECT reference, batch_number, delivery_date, planned_eta, destination FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: MAD X / mise à disposition X
-SQL: SELECT reference, batch_number, mad_date, planned_eta, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: ITS X / date instruction X
-SQL: SELECT reference, batch_number, its_date, planned_eta, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-=== TEMPLATES - CONTENEURS & NAVIRES ===
-
-Q: conteneur X / tracking conteneur X
-SQL: SELECT reference, batch_number, container_number, seal_number, vessel, status, planned_eta FROM shipments WHERE container_number ILIKE '%X%' OR reference ILIKE '%X%' LIMIT 5;
-
-Q: navire X / vessel X / bateau X
-SQL: SELECT reference, batch_number, vessel, container_number, planned_eta, status FROM shipments WHERE vessel ILIKE '%X%' LIMIT 10;
-
-Q: scellé X / seal X
-SQL: SELECT reference, container_number, seal_number, vessel, status FROM shipments WHERE seal_number ILIKE '%X%' LIMIT 5;
-
-=== TEMPLATES - RETARDS & URGENCES ===
-
-Q: retards / articles en retard / late shipments
-SQL: SELECT reference, batch_number, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard, customer FROM shipments WHERE planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' AND status NOT ILIKE '%FINAL%' ORDER BY jours_retard DESC LIMIT 15;
-
-Q: commandes urgentes / rush / prioritaires
-SQL: SELECT reference, batch_number, status, planned_eta, customer FROM shipments WHERE rush_status = true ORDER BY planned_eta LIMIT 15;
-
-Q: retards maritimes / sea delays
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard, vessel FROM shipments WHERE planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' AND transport_mode ILIKE '%SEA%' ORDER BY jours_retard DESC LIMIT 10;
-
-Q: retards aériens / air delays
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard FROM shipments WHERE planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' AND transport_mode ILIKE '%AIR%' ORDER BY jours_retard DESC LIMIT 10;
-
-Q: retards client X
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard FROM shipments WHERE customer ILIKE '%X%' AND planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' LIMIT 10;
-
-Q: très en retard / retard > 7 jours
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard, customer FROM shipments WHERE planned_eta < CURRENT_DATE - 7 AND status NOT ILIKE '%DELIVER%' ORDER BY jours_retard DESC LIMIT 10;
-
-=== TEMPLATES - ALÉAS & RISQUES ===
-
-Q: aléas actifs / risques en cours / problèmes
-SQL: SELECT type, severity, message, impact_days, linked_route FROM alerts WHERE active = true ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END, created_at DESC LIMIT 20;
-
-Q: alertes critiques / critical alerts
-SQL: SELECT type, message, impact_days, linked_route, created_at FROM alerts WHERE severity = 'CRITICAL' AND active = true LIMIT 15;
-
-Q: alertes haute priorité / high severity
-SQL: SELECT type, message, impact_days, linked_route FROM alerts WHERE severity IN ('CRITICAL', 'HIGH') AND active = true LIMIT 15;
-
-Q: aléas météo / weather alerts / tempêtes
-SQL: SELECT type, severity, message, impact_days, linked_route FROM alerts WHERE type = 'WEATHER' AND active = true ORDER BY severity DESC LIMIT 10;
-
-Q: congestion ports / port congestion
-SQL: SELECT type, message, impact_days, linked_route, severity FROM alerts WHERE type = 'PORT_CONGESTION' AND active = true LIMIT 10;
-
-Q: grèves / strikes
-SQL: SELECT type, message, severity, impact_days, linked_route FROM alerts WHERE type = 'STRIKE' AND active = true LIMIT 10;
-
-Q: aléas douanes / customs issues
-SQL: SELECT type, message, severity, impact_days FROM alerts WHERE type = 'CUSTOMS' AND active = true LIMIT 10;
-
-Q: risques financiers / financial risks
-SQL: SELECT type, message, severity, impact_days FROM alerts WHERE type = 'FINANCIAL' AND active = true LIMIT 10;
-
-Q: pandémie / pandemic alerts
-SQL: SELECT type, message, severity, impact_days, linked_route FROM alerts WHERE type = 'PANDEMIC' AND active = true LIMIT 10;
-
-Q: risques par route X / aléas route X
-SQL: SELECT type, message, severity, impact_days FROM alerts WHERE linked_route ILIKE '%X%' AND active = true LIMIT 10;
-
-Q: impact total aléas / jours perdus
-SQL: SELECT type, COUNT(*) as nb, SUM(impact_days) as total_impact, AVG(impact_days) as impact_moyen FROM alerts WHERE active = true GROUP BY type ORDER BY total_impact DESC;
-
-Q: statistiques aléas / alert stats
-SQL: SELECT type, severity, COUNT(*) as nb FROM alerts WHERE active = true GROUP BY type, severity ORDER BY type, severity;
-
-Q: historique aléas / all alerts
-SQL: SELECT type, severity, message, impact_days, created_at FROM alerts ORDER BY created_at DESC LIMIT 20;
-
-=== TEMPLATES - JALONS & TRAÇABILITÉ ===
-
-Q: historique jalons X / étapes X / events X / timeline X
-SQL: SELECT e.type, e.timestamp, e.note, s.reference FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%' ORDER BY e.timestamp DESC LIMIT 25;
-
-Q: tracking GPS / position temps réel / GPS
-SQL: SELECT e.type, e.timestamp, e.note, s.reference, s.vessel FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.type = 'GPS_POSITION' ORDER BY e.timestamp DESC LIMIT 10;
-
-Q: douanes / customs status / dédouanement
-SQL: SELECT e.type, e.timestamp, e.note, s.reference, s.customer FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.type IN ('CUSTOMS_STATUS', 'IMPORT_CLEARANCE') ORDER BY e.timestamp DESC LIMIT 10;
-
-Q: chargement en cours / loading
-SQL: SELECT e.type, e.timestamp, s.reference, s.vessel FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.type = 'LOADING_IN_PROGRESS' ORDER BY e.timestamp DESC LIMIT 10;
-
-Q: arrivées port / port arrivals
-SQL: SELECT e.type, e.timestamp, s.reference, s.destination FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.type = 'ARRIVAL_PORT' ORDER BY e.timestamp DESC LIMIT 10;
-
-Q: livraisons récentes / recent deliveries
-SQL: SELECT e.type, e.timestamp, s.reference, s.customer FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.type = 'FINAL_DELIVERY' ORDER BY e.timestamp DESC LIMIT 10;
-
-Q: dernières mises à jour / recent events
-SQL: SELECT e.type, e.timestamp, e.note, s.reference FROM events e JOIN shipments s ON e.shipment_id = s.id ORDER BY e.timestamp DESC LIMIT 20;
-
-=== TEMPLATES - DOCUMENTS ===
-
-Q: documents X / docs X / papiers X
-SQL: SELECT d.type, d.filename, d.status, d.uploaded_at FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%' ORDER BY d.uploaded_at DESC LIMIT 10;
-
-Q: BL X / bill of lading X / connaissement X
-SQL: SELECT d.type, d.filename, d.status, d.uploaded_at, s.reference FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'BL' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') LIMIT 5;
-
-Q: facture X / invoice X
-SQL: SELECT d.type, d.filename, d.status, d.uploaded_at, s.reference FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'INVOICE' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') LIMIT 5;
-
-Q: packing list X / liste colisage X
-SQL: SELECT d.type, d.filename, d.status, s.reference FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'PACKING_LIST' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') LIMIT 5;
-
-Q: rapport qualité X / QC report X / contrôle qualité X
-SQL: SELECT d.type, d.filename, d.status, d.uploaded_at, s.reference FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'QC_REPORT' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') LIMIT 5;
-
-Q: déclaration douane X / customs declaration X
-SQL: SELECT d.type, d.filename, d.status, s.reference FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'CUSTOMS_DEC' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') LIMIT 5;
-
-Q: documents manquants / missing docs
-SQL: SELECT s.reference, s.status FROM shipments s WHERE NOT EXISTS (SELECT 1 FROM documents d WHERE d.shipment_id = s.id) AND s.status NOT ILIKE '%DELIVER%' LIMIT 10;
-
-Q: documents récents / recent uploads
-SQL: SELECT d.type, d.filename, s.reference, d.uploaded_at FROM documents d JOIN shipments s ON d.shipment_id = s.id ORDER BY d.uploaded_at DESC LIMIT 15;
-
-=== TEMPLATES - QUALITÉ & CONFORMITÉ ===
-
-Q: QC validé X / contrôle qualité X
-SQL: SELECT reference, batch_number, qc_date, compliance_status, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: conformité X / compliance X
-SQL: SELECT reference, batch_number, compliance_status, qc_date, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: QC en attente / pending QC
-SQL: SELECT reference, batch_number, status, planned_etd FROM shipments WHERE qc_date IS NULL AND status NOT ILIKE '%DELIVER%' LIMIT 10;
-
-Q: QC récents / recent QC
-SQL: SELECT reference, batch_number, qc_date, compliance_status FROM shipments WHERE qc_date IS NOT NULL ORDER BY qc_date DESC LIMIT 10;
-
-Q: non conforme / non-compliant / rejected QC
-SQL: SELECT reference, batch_number, compliance_status, qc_date FROM shipments WHERE compliance_status ILIKE '%NON%' OR compliance_status ILIKE '%REJECT%' LIMIT 10;
-
-Q: délai production-expédition X
-SQL: SELECT reference, qc_date, planned_etd, planned_etd - qc_date as delai_jours FROM shipments WHERE qc_date IS NOT NULL AND planned_etd IS NOT NULL AND (reference ILIKE '%X%' OR batch_number ILIKE '%X%') LIMIT 5;
-
-=== TEMPLATES - CLIENTS ===
-
-Q: commandes client X / customer X orders
-SQL: SELECT reference, batch_number, status, planned_eta, origin FROM shipments WHERE customer ILIKE '%X%' ORDER BY planned_eta LIMIT 15;
-
-Q: retards client X / client X delays
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard FROM shipments WHERE customer ILIKE '%X%' AND planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' ORDER BY jours_retard DESC LIMIT 10;
-
-Q: livrées client X / deliveries customer X
-SQL: SELECT reference, delivery_date, status FROM shipments WHERE customer ILIKE '%X%' AND (status ILIKE '%DELIVER%' OR status ILIKE '%FINAL%') ORDER BY delivery_date DESC LIMIT 10;
-
-Q: rush client X / urgent client X
-SQL: SELECT reference, status, planned_eta FROM shipments WHERE customer ILIKE '%X%' AND rush_status = true LIMIT 10;
-
-Q: volume client X / stats client X
-SQL: SELECT customer, COUNT(*) as nb_commandes, SUM(quantity) as total_qty, SUM(weight_kg) as total_kg FROM shipments WHERE customer ILIKE '%X%' GROUP BY customer;
-
-Q: top clients / meilleurs clients
-SQL: SELECT customer, COUNT(*) as nb_commandes FROM shipments GROUP BY customer ORDER BY nb_commandes DESC LIMIT 10;
-
-Q: liste clients / all customers
-SQL: SELECT DISTINCT customer, COUNT(*) as nb FROM shipments WHERE customer IS NOT NULL GROUP BY customer ORDER BY nb DESC LIMIT 20;
-
-=== TEMPLATES - FOURNISSEURS ===
-
-Q: commandes fournisseur X / supplier X orders
-SQL: SELECT reference, batch_number, status, planned_etd, supplier FROM shipments WHERE supplier ILIKE '%X%' ORDER BY planned_etd LIMIT 15;
-
-Q: retards fournisseur X
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard FROM shipments WHERE supplier ILIKE '%X%' AND planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' LIMIT 10;
-
-Q: volume fournisseur X / stats fournisseur X
-SQL: SELECT supplier, COUNT(*) as nb, SUM(quantity) as total_qty FROM shipments WHERE supplier ILIKE '%X%' GROUP BY supplier;
-
-Q: top fournisseurs / best suppliers
-SQL: SELECT supplier, COUNT(*) as nb_commandes FROM shipments WHERE supplier IS NOT NULL GROUP BY supplier ORDER BY nb_commandes DESC LIMIT 10;
-
-Q: fiabilité fournisseur X / supplier reliability
-SQL: SELECT supplier, COUNT(*) as total, SUM(CASE WHEN delivery_date IS NOT NULL AND planned_eta >= delivery_date THEN 1 ELSE 0 END) as on_time FROM shipments WHERE supplier ILIKE '%X%' AND delivery_date IS NOT NULL GROUP BY supplier;
-
-Q: liste fournisseurs
-SQL: SELECT DISTINCT supplier, COUNT(*) as nb FROM shipments WHERE supplier IS NOT NULL GROUP BY supplier ORDER BY nb DESC LIMIT 20;
-
-=== TEMPLATES - TRANSITAIRES ===
-
-Q: commandes transitaire X / forwarder X
-SQL: SELECT reference, status, forwarder_name, planned_eta FROM shipments WHERE forwarder_name ILIKE '%X%' LIMIT 15;
-
-Q: top transitaires
-SQL: SELECT forwarder_name, COUNT(*) as nb FROM shipments WHERE forwarder_name IS NOT NULL GROUP BY forwarder_name ORDER BY nb DESC LIMIT 10;
-
-Q: performance transitaires
-SQL: SELECT forwarder_name, COUNT(*) as total, SUM(CASE WHEN planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' THEN 1 ELSE 0 END) as retards FROM shipments WHERE forwarder_name IS NOT NULL GROUP BY forwarder_name ORDER BY total DESC LIMIT 10;
-
-=== TEMPLATES - TRANSPORT & MODES ===
-
-Q: en transit / transit shipments
-SQL: SELECT reference, batch_number, vessel, planned_eta, status, destination FROM shipments WHERE status ILIKE '%TRANSIT%' ORDER BY planned_eta LIMIT 15;
-
-Q: livrées / delivered / terminées
-SQL: SELECT reference, batch_number, delivery_date, status, customer FROM shipments WHERE status ILIKE '%DELIVER%' OR status ILIKE '%FINAL%' ORDER BY delivery_date DESC LIMIT 15;
-
-Q: expéditions maritimes / sea shipments / maritime
-SQL: SELECT reference, transport_mode, vessel, status, planned_eta FROM shipments WHERE transport_mode ILIKE '%SEA%' OR transport_mode ILIKE '%OCEAN%' ORDER BY planned_eta LIMIT 15;
-
-Q: expéditions aériennes / air shipments / aérien
-SQL: SELECT reference, transport_mode, status, planned_eta FROM shipments WHERE transport_mode ILIKE '%AIR%' ORDER BY planned_eta LIMIT 15;
-
-Q: expéditions terrestres / road / camion
-SQL: SELECT reference, transport_mode, status, planned_eta FROM shipments WHERE transport_mode ILIKE '%ROAD%' OR transport_mode ILIKE '%TRUCK%' ORDER BY planned_eta LIMIT 15;
-
-Q: rail / train
-SQL: SELECT reference, transport_mode, status, planned_eta FROM shipments WHERE transport_mode ILIKE '%RAIL%' ORDER BY planned_eta LIMIT 10;
-
-Q: multimodal
-SQL: SELECT reference, transport_mode, status, planned_eta FROM shipments WHERE transport_mode ILIKE '%MULTI%' LIMIT 10;
-
-Q: production prête / ready to ship
-SQL: SELECT reference, status, customer, planned_etd FROM shipments WHERE status = 'PRODUCTION_READY' ORDER BY planned_etd LIMIT 15;
-
-Q: chargement / loading now
-SQL: SELECT reference, status, vessel, origin FROM shipments WHERE status ILIKE '%LOADING%' LIMIT 10;
-
-Q: au port / at port
-SQL: SELECT reference, status, destination, planned_eta FROM shipments WHERE status ILIKE '%PORT%' OR status ILIKE '%ARRIVAL%' LIMIT 10;
-
-Q: dédouanement / customs clearance
-SQL: SELECT reference, status, destination, planned_eta FROM shipments WHERE status ILIKE '%CLEAR%' OR status ILIKE '%CUSTOMS%' OR status ILIKE '%IMPORT%' LIMIT 10;
-
-=== TEMPLATES - SCHEDULES TRANSPORTEURS ===
-
-Q: schedules / horaires transporteurs / carrier schedules
-SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days, vessel_name FROM carrier_schedules WHERE etd >= CURRENT_DATE ORDER BY etd LIMIT 15;
-
-Q: schedules prochaine semaine / next week schedules
-SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days FROM carrier_schedules WHERE etd BETWEEN CURRENT_DATE AND CURRENT_DATE + 7 ORDER BY etd LIMIT 15;
-
-Q: meilleur schedule X vers Y / best schedule X to Y
-SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days, vessel_name FROM carrier_schedules WHERE pol ILIKE '%X%' AND pod ILIKE '%Y%' AND etd >= CURRENT_DATE ORDER BY transit_time_days, etd LIMIT 10;
-
-Q: schedules maritime / sea schedules
-SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days, vessel_name FROM carrier_schedules WHERE mode = 'SEA' AND etd >= CURRENT_DATE ORDER BY etd LIMIT 15;
-
-Q: schedules aérien / air schedules
-SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days FROM carrier_schedules WHERE mode = 'AIR' AND etd >= CURRENT_DATE ORDER BY etd LIMIT 15;
-
-Q: transit time X vers Y
-SQL: SELECT carrier, pol, pod, transit_time_days, etd FROM carrier_schedules WHERE pol ILIKE '%X%' AND pod ILIKE '%Y%' ORDER BY transit_time_days LIMIT 10;
-
-Q: carriers / transporteurs disponibles
-SQL: SELECT DISTINCT carrier, mode, COUNT(*) as nb_schedules FROM carrier_schedules WHERE etd >= CURRENT_DATE GROUP BY carrier, mode ORDER BY nb_schedules DESC;
-
-=== TEMPLATES - ARRIVÉES PRÉVUES ===
-
-Q: arrivées aujourd'hui / arriving today
-SQL: SELECT reference, planned_eta, destination, vessel, customer FROM shipments WHERE DATE(planned_eta) = CURRENT_DATE ORDER BY planned_eta LIMIT 15;
-
-Q: arrivées demain / arriving tomorrow
-SQL: SELECT reference, planned_eta, destination, vessel FROM shipments WHERE DATE(planned_eta) = CURRENT_DATE + 1 LIMIT 15;
-
-Q: arrivées cette semaine / arriving this week
-SQL: SELECT reference, planned_eta, destination, vessel, customer FROM shipments WHERE planned_eta BETWEEN CURRENT_DATE AND CURRENT_DATE + 7 ORDER BY planned_eta LIMIT 20;
-
-Q: arrivées 7 jours / next 7 days arrivals
-SQL: SELECT reference, planned_eta, destination, vessel, status FROM shipments WHERE planned_eta BETWEEN CURRENT_DATE AND CURRENT_DATE + 7 ORDER BY planned_eta LIMIT 20;
-
-Q: arrivées 30 jours / next month arrivals
-SQL: SELECT reference, planned_eta, destination, status FROM shipments WHERE planned_eta BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 ORDER BY planned_eta LIMIT 30;
-
-Q: arrivées ce mois / monthly arrivals
-SQL: SELECT reference, planned_eta, destination FROM shipments WHERE EXTRACT(MONTH FROM planned_eta) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM planned_eta) = EXTRACT(YEAR FROM CURRENT_DATE) ORDER BY planned_eta LIMIT 30;
-
-Q: départs cette semaine / departures this week
-SQL: SELECT reference, planned_etd, origin, vessel FROM shipments WHERE planned_etd BETWEEN CURRENT_DATE AND CURRENT_DATE + 7 ORDER BY planned_etd LIMIT 20;
-
-=== TEMPLATES - DDP & INCOTERMS ===
-
-Q: commandes DDP
-SQL: SELECT reference, status, incoterm, planned_eta, customer FROM shipments WHERE incoterm = 'DDP' ORDER BY planned_eta LIMIT 15;
-
-Q: DDP en transit
-SQL: SELECT reference, status, vessel, planned_eta FROM shipments WHERE incoterm = 'DDP' AND status ILIKE '%TRANSIT%' LIMIT 10;
-
-Q: DDP en retard
-SQL: SELECT reference, status, planned_eta, CURRENT_DATE - planned_eta as jours_retard FROM shipments WHERE incoterm = 'DDP' AND planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' LIMIT 10;
-
-Q: FOB orders
-SQL: SELECT reference, status, incoterm, planned_eta FROM shipments WHERE incoterm = 'FOB' LIMIT 15;
-
-Q: EXW orders
-SQL: SELECT reference, status, incoterm, planned_eta FROM shipments WHERE incoterm = 'EXW' LIMIT 15;
-
-Q: CIF orders
-SQL: SELECT reference, status, incoterm, planned_eta FROM shipments WHERE incoterm = 'CIF' LIMIT 15;
-
-Q: commandes par incoterm / incoterm breakdown
-SQL: SELECT incoterm, COUNT(*) as nb FROM shipments WHERE incoterm IS NOT NULL GROUP BY incoterm ORDER BY nb DESC;
-
-=== TEMPLATES - STATISTIQUES GÉNÉRALES ===
-
-Q: stats par statut / status breakdown
-SQL: SELECT status, COUNT(*) as nb FROM shipments GROUP BY status ORDER BY nb DESC;
-
-Q: stats par client / customer breakdown
-SQL: SELECT customer, COUNT(*) as nb FROM shipments GROUP BY customer ORDER BY nb DESC LIMIT 15;
-
-Q: stats par fournisseur / supplier breakdown
-SQL: SELECT supplier, COUNT(*) as nb FROM shipments WHERE supplier IS NOT NULL GROUP BY supplier ORDER BY nb DESC LIMIT 15;
-
-Q: stats par transporteur / forwarder breakdown
-SQL: SELECT forwarder_name, COUNT(*) as nb FROM shipments WHERE forwarder_name IS NOT NULL GROUP BY forwarder_name ORDER BY nb DESC LIMIT 10;
-
-Q: stats par mode / transport mode breakdown
-SQL: SELECT transport_mode, COUNT(*) as nb FROM shipments WHERE transport_mode IS NOT NULL GROUP BY transport_mode ORDER BY nb DESC;
-
-Q: stats par origine / origin breakdown
-SQL: SELECT origin, COUNT(*) as nb FROM shipments WHERE origin IS NOT NULL GROUP BY origin ORDER BY nb DESC LIMIT 15;
-
-Q: stats par destination / destination breakdown
-SQL: SELECT destination, COUNT(*) as nb FROM shipments WHERE destination IS NOT NULL GROUP BY destination ORDER BY nb DESC LIMIT 15;
-
-Q: volume total / total volume
-SQL: SELECT COUNT(*) as total_shipments, SUM(quantity) as total_qty, SUM(weight_kg) as total_kg, SUM(volume_cbm) as total_cbm FROM shipments;
-
-Q: stats mois en cours / current month stats
-SQL: SELECT COUNT(*) as total, SUM(CASE WHEN status ILIKE '%DELIVER%' THEN 1 ELSE 0 END) as livrees, SUM(CASE WHEN planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' THEN 1 ELSE 0 END) as retards FROM shipments WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE);
-
-Q: stats 30 derniers jours / last 30 days
-SQL: SELECT COUNT(*) as total, SUM(CASE WHEN status ILIKE '%DELIVER%' THEN 1 ELSE 0 END) as livrees FROM shipments WHERE created_at >= CURRENT_DATE - 30;
-
-Q: taux de retard / delay rate
-SQL: SELECT COUNT(*) as total, SUM(CASE WHEN planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' THEN 1 ELSE 0 END) as retards, ROUND(100.0 * SUM(CASE WHEN planned_eta < CURRENT_DATE AND status NOT ILIKE '%DELIVER%' THEN 1 ELSE 0 END) / COUNT(*), 1) as taux_retard_pct FROM shipments WHERE planned_eta IS NOT NULL;
-
-Q: performance livraison / delivery performance
-SQL: SELECT COUNT(*) as total, SUM(CASE WHEN delivery_date IS NOT NULL AND delivery_date <= planned_eta THEN 1 ELSE 0 END) as on_time, SUM(CASE WHEN delivery_date IS NOT NULL AND delivery_date > planned_eta THEN 1 ELSE 0 END) as late FROM shipments WHERE delivery_date IS NOT NULL;
-
-=== TEMPLATES - COMMERCIAL / VENTES ===
-
-Q: prêtes facturation / ready for billing
-SQL: SELECT reference, status, customer, delivery_date FROM shipments WHERE status IN ('FINAL_DELIVERY', 'IMPORT_CLEARANCE') AND delivery_date IS NOT NULL ORDER BY delivery_date DESC LIMIT 15;
-
-Q: commandes prêtes / ready orders
-SQL: SELECT reference, status, customer, planned_eta FROM shipments WHERE status = 'PRODUCTION_READY' ORDER BY planned_eta LIMIT 15;
-
-Q: pipeline client X / client X pipeline
-SQL: SELECT status, COUNT(*) as nb FROM shipments WHERE customer ILIKE '%X%' GROUP BY status;
-
-Q: valeur client X / customer X value
-SQL: SELECT customer, COUNT(*) as nb, SUM(quantity) as qty, SUM(weight_kg) as kg FROM shipments WHERE customer ILIKE '%X%' GROUP BY customer;
-
-Q: deadline cut-off maritime
-SQL: SELECT reference, planned_etd, planned_etd - CURRENT_DATE as jours_avant_cutoff, status, vessel FROM shipments WHERE transport_mode ILIKE '%SEA%' AND planned_etd >= CURRENT_DATE AND status NOT ILIKE '%TRANSIT%' ORDER BY planned_etd LIMIT 15;
-
-=== TEMPLATES - ACHATS / PROCUREMENT ===
-
-Q: achats urgents / urgent procurement
-SQL: SELECT reference, supplier, transport_mode, planned_etd, rush_status FROM shipments WHERE rush_status = true AND supplier IS NOT NULL ORDER BY planned_etd LIMIT 15;
-
-Q: sourcing fournisseur X
-SQL: SELECT reference, sku, quantity, planned_etd FROM shipments WHERE supplier ILIKE '%X%' ORDER BY planned_etd LIMIT 15;
-
-Q: délai moyen fournisseur X
-SQL: SELECT supplier, AVG(planned_eta - planned_etd) as transit_moyen FROM shipments WHERE supplier ILIKE '%X%' AND planned_etd IS NOT NULL AND planned_eta IS NOT NULL GROUP BY supplier;
-
-Q: next PO fournisseur X / prochaine commande
-SQL: SELECT reference, planned_etd, status FROM shipments WHERE supplier ILIKE '%X%' AND planned_etd >= CURRENT_DATE ORDER BY planned_etd LIMIT 5;
-
-=== TEMPLATES - LOGISTIQUE ===
-
-Q: capacité conteneurs / container utilization
-SQL: SELECT container_number, COUNT(*) as nb_shipments, SUM(weight_kg) as total_kg, SUM(volume_cbm) as total_cbm FROM shipments WHERE container_number IS NOT NULL GROUP BY container_number ORDER BY nb_shipments DESC LIMIT 15;
-
-Q: poids par conteneur X
-SQL: SELECT container_number, SUM(weight_kg) as total_kg, SUM(volume_cbm) as total_cbm, COUNT(*) as nb_items FROM shipments WHERE container_number ILIKE '%X%' GROUP BY container_number;
-
-Q: ports les plus utilisés
-SQL: SELECT destination as port, COUNT(*) as nb FROM shipments GROUP BY destination ORDER BY nb DESC LIMIT 10;
-
-Q: routes les plus fréquentes
-SQL: SELECT origin, destination, COUNT(*) as nb FROM shipments GROUP BY origin, destination ORDER BY nb DESC LIMIT 15;
-
-Q: lead time moyen / average lead time
-SQL: SELECT AVG(planned_eta - planned_etd) as lead_time_moyen, transport_mode FROM shipments WHERE planned_etd IS NOT NULL AND planned_eta IS NOT NULL GROUP BY transport_mode;
-
-=== TEMPLATES - REQUÊTES COMBINÉES AVANCÉES ===
-
-Q: où se trouve X actuellement / position + dernier jalon X
-SQL: SELECT s.reference, s.status, s.vessel, s.destination, s.container_number, s.planned_eta, e.type as dernier_jalon, e.timestamp as date_jalon FROM shipments s LEFT JOIN events e ON e.shipment_id = s.id WHERE (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') ORDER BY e.timestamp DESC LIMIT 1;
-
-Q: statut détaillé X avec mode transport / statut complet X
-SQL: SELECT s.reference, s.status, s.transport_mode, s.vessel, s.container_number, s.origin, s.destination, s.planned_etd, s.planned_eta, s.qc_date, s.compliance_status FROM shipments s WHERE s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%' LIMIT 5;
-
-Q: dans les délais pour campagne / ma campagne X / commandes pour période X
-SQL: SELECT reference, status, planned_eta, customer, rush_status FROM shipments WHERE planned_eta BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 AND status NOT ILIKE '%DELIVER%' ORDER BY planned_eta LIMIT 20;
-
-Q: retards sur mes articles en transit / mes commandes en retard en transit
-SQL: SELECT reference, status, vessel, planned_eta, CURRENT_DATE - planned_eta as jours_retard, destination FROM shipments WHERE status ILIKE '%TRANSIT%' AND planned_eta < CURRENT_DATE ORDER BY jours_retard DESC LIMIT 15;
-
-Q: ETA recalculée congestion / impact congestion sur ETA
-SQL: SELECT s.reference, s.planned_eta, a.message, a.impact_days, s.planned_eta + a.impact_days as eta_ajustee FROM shipments s JOIN alerts a ON a.linked_route ILIKE '%' || s.destination || '%' WHERE a.type = 'PORT_CONGESTION' AND a.active = true AND s.status ILIKE '%TRANSIT%' LIMIT 10;
-
-Q: aléas météo fret maritime / impact météo maritime
-SQL: SELECT a.type, a.severity, a.message, a.impact_days, a.linked_route FROM alerts a WHERE a.type = 'WEATHER' AND a.active = true AND a.linked_route ILIKE '%SEA%' ORDER BY a.severity DESC LIMIT 10;
-
-Q: aléas aérien / impact capacité aérien / annulations aériennes
-SQL: SELECT a.type, a.severity, a.message, a.impact_days, a.linked_route FROM alerts a WHERE a.active = true AND (a.linked_route ILIKE '%AIR%' OR a.message ILIKE '%aérien%' OR a.message ILIKE '%cargo%') ORDER BY a.severity DESC LIMIT 10;
-
-Q: QC validé tous articles X / contrôle qualité complet X
-SQL: SELECT reference, batch_number, qc_date, compliance_status, status, quantity FROM shipments WHERE (reference ILIKE '%X%' OR customer ILIKE '%X%') AND qc_date IS NOT NULL ORDER BY qc_date DESC LIMIT 15;
-
-Q: rapport qualité fichiers X / documents QC X
-SQL: SELECT d.filename, d.status, d.uploaded_at, s.reference, s.compliance_status FROM documents d JOIN shipments s ON d.shipment_id = s.id WHERE d.type = 'QC_REPORT' AND (s.reference ILIKE '%X%' OR s.batch_number ILIKE '%X%') ORDER BY d.uploaded_at DESC LIMIT 10;
-
-Q: date livraison précise X / créneau livraison X
-SQL: SELECT reference, planned_eta, delivery_date, destination, mad_date, status FROM shipments WHERE reference ILIKE '%X%' OR batch_number ILIKE '%X%' LIMIT 5;
-
-Q: impact aléa fournisseur X / risque fournisseur X
-SQL: SELECT s.reference, s.supplier, s.status, s.planned_eta, a.type, a.message FROM shipments s LEFT JOIN alerts a ON a.shipment_id = s.id WHERE s.supplier ILIKE '%X%' AND (a.active = true OR a.id IS NULL) ORDER BY a.severity DESC NULLS LAST LIMIT 15;
-
-Q: AWB X / numéro tracking X / suivi transporteur X
-SQL: SELECT reference, container_number, vessel, forwarder_name, transport_mode, planned_eta, status FROM shipments WHERE container_number ILIKE '%X%' OR reference ILIKE '%X%' OR forwarder_name ILIKE '%X%' LIMIT 10;
-
-Q: taux respect délais / ponctualité historique / OTD rate
-SQL: SELECT COUNT(*) as total, SUM(CASE WHEN delivery_date IS NOT NULL AND delivery_date <= planned_eta THEN 1 ELSE 0 END) as a_lheure, ROUND(100.0 * SUM(CASE WHEN delivery_date IS NOT NULL AND delivery_date <= planned_eta THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as taux_ponctualite FROM shipments WHERE delivery_date IS NOT NULL;
-
-Q: options aériennes urgentes / switch air maritime / alternatives aériennes
-SQL: SELECT carrier, pol, pod, etd, eta, transit_time_days FROM carrier_schedules WHERE mode = 'AIR' AND etd >= CURRENT_DATE ORDER BY etd, transit_time_days LIMIT 10;
-
-Q: coûts douaniers / taxes import / frais douane
-SQL: SELECT reference, incoterm, destination, status, compliance_status FROM shipments WHERE incoterm IN ('DDP', 'CIF') AND status ILIKE '%CUSTOMS%' OR status ILIKE '%CLEAR%' LIMIT 10;
-
-Q: grèves terminaux / aléas humains / fermeture terminaux
-SQL: SELECT type, severity, message, impact_days, linked_route FROM alerts WHERE type = 'STRIKE' AND active = true ORDER BY severity DESC, created_at DESC LIMIT 10;
-
-Q: aléas réglementaires / nouvelles taxes / réglementations import
-SQL: SELECT type, severity, message, impact_days, category FROM alerts WHERE (type = 'CUSTOMS' OR message ILIKE '%tax%' OR message ILIKE '%réglement%') AND active = true LIMIT 10;
-
-Q: plan contingence / routes alternatives X / multimodal backup
-SQL: SELECT carrier, pol, pod, mode, etd, eta, transit_time_days FROM carrier_schedules WHERE (pol ILIKE '%X%' OR pod ILIKE '%X%') AND etd >= CURRENT_DATE ORDER BY transit_time_days LIMIT 15;
-
-Q: aléas calendaires CNY / Golden Week / impact fêtes
-SQL: SELECT type, message, impact_days, linked_route FROM alerts WHERE (message ILIKE '%CNY%' OR message ILIKE '%Chinese%' OR message ILIKE '%Golden%' OR message ILIKE '%fête%' OR message ILIKE '%holiday%') AND active = true LIMIT 10;
-
-Q: commandes synchronisation API / sync status / statut synchronisation
-SQL: SELECT reference, carrier_scac, sync_status, last_sync_at, next_poll_at FROM shipments WHERE carrier_scac IS NOT NULL ORDER BY last_sync_at DESC NULLS LAST LIMIT 15;
-
-Q: événements API X / events source API
-SQL: SELECT e.type, e.timestamp, e.source, e.external_id, s.reference FROM events e JOIN shipments s ON e.shipment_id = s.id WHERE e.source != 'MANUAL' ORDER BY e.timestamp DESC LIMIT 20;
-
-Q: erreurs API récentes / logs API erreurs / problèmes synchronisation
-SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_logs WHERE status_code >= 400 OR error_message IS NOT NULL ORDER BY created_at DESC LIMIT 20;
-
-
-=== FIN DES TEMPLATES ===
+Q: Erreurs API récentes
+SQL: SELECT provider, endpoint, status_code, error_message, created_at FROM api_logs WHERE status_code >= 400 OR error_message IS NOT NULL ORDER BY created_at DESC LIMIT 15;
 """
 
 SQL_PROMPT_SUFFIX = """
@@ -681,15 +129,15 @@ class ChatbotEngine:
         if not groq_api_key:
             raise ValueError("GROQ_API_KEY environment variable is required")
         
+        self.groq_api_key = groq_api_key
         groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-        groq_max_tokens = int(os.getenv("GROQ_MAX_TOKENS", "500"))
+        self.groq_max_tokens = int(os.getenv("GROQ_MAX_TOKENS", "500"))
+        self.fallback_models = [groq_model] + [
+            m for m in ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+            if m != groq_model
+        ]
 
-        self.llm = ChatGroq(
-            api_key=groq_api_key,
-            model=groq_model,
-            temperature=0,
-            max_tokens=groq_max_tokens,
-        )
+        self.llm = self._create_llm(groq_model)
         
         # Customer filtering logic
         # 1. Use allowed_customer if set (highest priority, applies to all roles)
@@ -698,9 +146,6 @@ class ChatbotEngine:
         if not filter_customer and self.user.role == "client":
             filter_customer = self.user.name
             
-        final_prompt = SQL_PROMPT
-
-
         # Default is_demo to False for production safety
         is_demo = False
 
@@ -724,10 +169,19 @@ RÈGLES DE FILTRAGE :
 2. Si la requête n'a PAS de clause WHERE, ajoute "WHERE (customer ILIKE '%{safe_customer}%' OR customer ILIKE '%L''Oreal%' OR customer ILIKE '%Lancôme%')".
 """
             
-        final_prompt = SQL_PROMPT + filter_instruction + SQL_PROMPT_SUFFIX
+        self.base_sql_prompt = SQL_PROMPT + filter_instruction
+        final_prompt = self.base_sql_prompt + SQL_PROMPT_SUFFIX
         
         self.sql_prompt = PromptTemplate.from_template(final_prompt)
         self.answer_prompt = PromptTemplate.from_template(ANSWER_PROMPT)
+
+    def _create_llm(self, model_name: str) -> ChatGroq:
+        return ChatGroq(
+            api_key=self.groq_api_key,
+            model=model_name,
+            temperature=0,
+            max_tokens=self.groq_max_tokens,
+        )
     
     def _validate_sql(self, sql: str) -> tuple[bool, str]:
         """Validate SQL syntax using sqlparse"""
@@ -768,28 +222,32 @@ RÈGLES DE FILTRAGE :
         return sql
     
     def _generate_sql(self, query: str, error_context: str = None) -> str:
-        """Generate SQL, with optional error context for retry"""
+        """Generate SQL, with optional error context for retry and model fallback"""
         print(f"DEBUG: Generating SQL for query: {query} (context: {error_context})", flush=True)
         if error_context:
-            # Fallback: add error context to help LLM fix the query
-            retry_prompt = f"""La requête précédente a échoué avec l'erreur: {error_context}
+            retry_suffix = f"""
+La requête précédente a échoué avec l'erreur: {error_context}
 Corrige la requête SQL pour la question suivante.
 
-Question: {query}
+Question: {{question}}
 SQL corrigé:"""
-            from langchain_core.prompts import PromptTemplate
-            retry_template = PromptTemplate.from_template(SQL_PROMPT.replace("Q: {question}\nSQL:", retry_prompt))
-            sql_chain = retry_template | self.llm | StrOutputParser()
+            prompt_template = PromptTemplate.from_template(self.base_sql_prompt + retry_suffix)
         else:
-            sql_chain = self.sql_prompt | self.llm | StrOutputParser()
+            prompt_template = self.sql_prompt
         
-        try:
-            raw_sql = sql_chain.invoke({"question": query})
-            print(f"DEBUG: Raw SQL generated: {raw_sql}", flush=True)
-            return self._clean_sql(raw_sql)
-        except Exception as e:
-            print(f"DEBUG: Error in _generate_sql invoke: {e}", flush=True)
-            raise e
+        last_exception = None
+        for model_name in self.fallback_models:
+            try:
+                llm = self._create_llm(model_name)
+                sql_chain = prompt_template | llm | StrOutputParser()
+                raw_sql = sql_chain.invoke({"question": query})
+                self.llm = llm  # Remember working model for answer streaming
+                print(f"DEBUG: Raw SQL generated ({model_name}): {raw_sql}", flush=True)
+                return self._clean_sql(raw_sql)
+            except Exception as e:
+                print(f"DEBUG: Error in _generate_sql with model {model_name}: {e}", flush=True)
+                last_exception = e
+        raise last_exception
 
     def process_stream(self, query: str):
         print(f"DEBUG: Starting process_stream for query: {query}", flush=True)
@@ -846,19 +304,30 @@ SQL corrigé:"""
                 print(f"DEBUG: Final Failure: {msg}", flush=True)
                 result = msg
             
-            # Generate answer with streaming
+            # Generate answer with streaming and model fallback
             print("DEBUG: Generating answer stream...", flush=True)
             full_response = ""
-            try:
-                answer_chain = self.answer_prompt | self.llm | StrOutputParser()
-                for chunk in answer_chain.stream({"question": query, "result": result}):
-                    # print(f"DEBUG: Chunk: {chunk}", flush=True) # Too verbose?
-                    yield chunk
-                    full_response += chunk
-                print(f"DEBUG: Stream complete. Full response length: {len(full_response)}", flush=True)
-            except Exception as e:
-                 print(f"DEBUG: Error during answer streaming: {e}", flush=True)
-                 yield f"Erreur de génération de réponse: {e}"
+            stream_success = False
+            last_stream_err = None
+            for model_name in self.fallback_models:
+                try:
+                    llm = self._create_llm(model_name)
+                    answer_chain = self.answer_prompt | llm | StrOutputParser()
+                    for chunk in answer_chain.stream({"question": query, "result": result}):
+                        yield chunk
+                        full_response += chunk
+                    stream_success = True
+                    print(f"DEBUG: Stream complete ({model_name}). Full response length: {len(full_response)}", flush=True)
+                    break
+                except Exception as e:
+                    print(f"DEBUG: Error during answer streaming with {model_name}: {e}", flush=True)
+                    last_stream_err = e
+                    if full_response:
+                        # Already yielded partial chunks, don't duplicate
+                        stream_success = True
+                        break
+            if not stream_success:
+                yield f"Erreur de génération de réponse: {last_stream_err}"
             
             # Cache the full response (only if successful)
             if "Erreur" not in str(result) and full_response:
